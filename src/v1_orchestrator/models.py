@@ -32,6 +32,11 @@ class TaskContract:
     allowed_paths: List[str] = field(default_factory=list)
     risk_notes: List[str] = field(default_factory=list)
     raw: Dict[str, Any] = field(default_factory=dict)
+    # Optional executable checks supplied by the planner.  Human-readable
+    # requirements remain separate so validation can collect machine evidence
+    # without guessing at commands embedded in prose.  This field is appended
+    # for positional-constructor compatibility with the original V1 contract.
+    validation_commands: List[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.goal_interpretation = str(self.goal_interpretation or "").strip()
@@ -43,6 +48,7 @@ class TaskContract:
             "implementation_plan",
             "acceptance_criteria",
             "validation_requirements",
+            "validation_commands",
             "allowed_paths",
             "risk_notes",
         ):

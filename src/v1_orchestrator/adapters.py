@@ -11,7 +11,6 @@ import shutil
 import subprocess
 import urllib.error
 import urllib.request
-import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, Optional, Sequence
 
@@ -80,7 +79,7 @@ class GPTCompatibleAdapter:
             raise ProviderError(f"{self.role} returned invalid completion payload") from exc
 
     def plan(self, original_goal: str, context: str = "") -> TaskContract:
-        schema = {"type": "object", "required": ["goal_interpretation", "scope", "non_goals", "implementation_plan", "acceptance_criteria", "validation_requirements", "allowed_paths", "risk_notes"]}
+        schema = {"type": "object", "required": ["goal_interpretation", "scope", "non_goals", "implementation_plan", "acceptance_criteria", "validation_requirements", "validation_commands", "allowed_paths", "risk_notes"]}
         prompt = (
             "Produce only a JSON task contract with these keys: " + ", ".join(schema["required"]) +
             ". Do not invent credentials, expand scope, or ask the executor to redefine the goal.\n" +
@@ -179,7 +178,9 @@ class DeepSeekHarnessAdapter:
         executable = self.executable
         if os.name == "nt" and not os.path.isabs(executable):
             executable = shutil.which(executable) or executable
-        command = [executable, "--profile", "headless"]
+        # ``--json`` exposes the opening session event, whose durable identity
+        # is required by a later ``--session-id`` resume.
+        command = [executable, "--profile", "headless", "--json"]
         if resume and session_id:
             command.extend(["--session-id", session_id])
         command.append(task_packet)
@@ -187,9 +188,13 @@ class DeepSeekHarnessAdapter:
 
     def run(self, task_packet: str, workspace: str, *, session_id: Optional[str] = None, resume: bool = False) -> ExecutionReport:
         started = utc_now()
-        session_id = session_id or f"dsh-{uuid.uuid4().hex[:12]}"
+        # A fresh dsh run owns its session identity; obtain it from the JSON
+        # session event rather than inventing an id the Harness cannot resume.
         command = self._command(task_packet, session_id=session_id, resume=resume)
-        safe_argv = [*command[:3], *(["[SESSION_ID]"] if resume and session_id else []), "[TASK_PACKET]"]
+        safe_argv = [command[0], "--profile", "headless", "--json"]
+        if resume and session_id:
+            safe_argv.extend(["--session-id", "[SESSION_ID]"])
+        safe_argv.append("[TASK_PACKET]")
         child_env = dict(self.env)
         # Project-side alias accepted by this wrapper; the harness itself reads
         # DEEPSEEK_BASE_URL.  Do not overwrite an explicit harness value.
@@ -203,7 +208,11 @@ class DeepSeekHarnessAdapter:
             proc = subprocess.run(command, cwd=workspace, env=child_env, text=True, capture_output=True, timeout=self.timeout, check=False, shell=False)
             output = redact(proc.stdout or "", secrets)
             error = redact(proc.stderr or "", secrets)
-            observed_session = self._session_from_output(output) or session_id
+            # Fresh runs must use the id emitted by dsh. A locally generated
+            # fallback cannot be resumed because it was never persisted by the
+            # Harness. During resume retain the caller id if dsh fails before
+            # emitting a new session event.
+            observed_session = self._session_from_output(output) or (session_id if resume else None)
             return ExecutionReport(ok=proc.returncode == 0, summary=output[-4000:], raw_output=output, raw_error=error, session_id=observed_session, commands=[{"argv": safe_argv, "returncode": proc.returncode, "resumed": bool(resume)}], started_at=started, finished_at=utc_now())
         except FileNotFoundError as exc:
             return ExecutionReport(ok=False, summary="DeepSeek Harness executable not found", raw_error=redact(str(exc), secrets), session_id=session_id, commands=[{"argv": safe_argv, "error": "not_found", "resumed": bool(resume)}], started_at=started, finished_at=utc_now())
@@ -242,5 +251,3 @@ class FakeAdapter:
         if self.reviews:
             return self.reviews.pop(0)
         return ReviewResult("PASS", notes="fake review passed")
-
-

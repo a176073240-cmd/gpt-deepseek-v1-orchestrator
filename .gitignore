@@ -19,6 +19,11 @@ env/
 # Orchestrator and harness runtime data
 .orchestrator/
 logs/
+runs/
+sessions/
+state/
+cache/
+outputs/
 *.log
 *.jsonl
 *.zstd

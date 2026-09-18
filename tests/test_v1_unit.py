@@ -26,6 +26,70 @@ def test_dsh_session_extraction():
     assert DeepSeekHarnessAdapter._session_from_output('{"type":"session","sessionId":"abc"}') == "abc"
 
 
+def test_dsh_commands_enable_json_and_resume():
+    adapter = DeepSeekHarnessAdapter(executable="dsh")
+
+    fresh = adapter._command('{"task":"inspect"}', session_id=None, resume=False)
+    assert fresh[:4] == ["dsh", "--profile", "headless", "--json"]
+    assert fresh[-1] == '{"task":"inspect"}'
+
+    resumed = adapter._command('{"task":"continue"}', session_id="session-42", resume=True)
+    assert resumed[:4] == ["dsh", "--profile", "headless", "--json"]
+    assert resumed[4:6] == ["--session-id", "session-42"]
+    assert resumed[-1] == '{"task":"continue"}'
+
+
+def test_dsh_run_uses_observed_session_and_redacts_evidence(monkeypatch, tmp_path):
+    captured = {}
+
+    def fake_run(command, **kwargs):
+        captured["command"] = command
+        return type("Result", (), {
+            "returncode": 0,
+            "stdout": '{"type":"session","sessionId":"persisted-42"}\n{"type":"final","text":"done"}',
+            "stderr": "",
+        })()
+
+    monkeypatch.setattr("v1_orchestrator.adapters.subprocess.run", fake_run)
+    adapter = DeepSeekHarnessAdapter(executable="dsh", env={"DEEPSEEK_API_KEY": "test-secret"})
+    report = adapter.run('{"task":"do work"}', str(tmp_path))
+
+    assert report.session_id == "persisted-42"
+    assert captured["command"][:4] == ["dsh", "--profile", "headless", "--json"]
+    assert report.commands[0]["argv"] == ["dsh", "--profile", "headless", "--json", "[TASK_PACKET]"]
+    assert "test-secret" not in report.raw_output
+
+
+def test_dsh_fresh_run_does_not_fabricate_session_id(monkeypatch, tmp_path):
+    def fake_run(command, **kwargs):
+        return type("Result", (), {"returncode": 1, "stdout": "", "stderr": "failed before session"})()
+
+    monkeypatch.setattr("v1_orchestrator.adapters.subprocess.run", fake_run)
+    report = DeepSeekHarnessAdapter(executable="dsh", env={}).run("task", str(tmp_path))
+    assert report.session_id is None
+
+
+def test_dsh_resume_redacts_session_and_task_from_command_evidence(monkeypatch, tmp_path):
+    def fake_run(command, **kwargs):
+        return type("Result", (), {"returncode": 1, "stdout": "", "stderr": "resume failed"})()
+
+    monkeypatch.setattr("v1_orchestrator.adapters.subprocess.run", fake_run)
+    task_packet = '{"private":"task text"}'
+    session_id = "session-private-42"
+    report = DeepSeekHarnessAdapter(executable="dsh", env={}).run(
+        task_packet, str(tmp_path), session_id=session_id, resume=True
+    )
+
+    assert report.session_id == session_id
+    command_evidence = str(report.commands)
+    assert task_packet not in command_evidence
+    assert session_id not in command_evidence
+    assert report.commands[0]["argv"] == [
+        "dsh", "--profile", "headless", "--json",
+        "--session-id", "[SESSION_ID]", "[TASK_PACKET]",
+    ]
+
+
 def test_missing_gpt_config_is_actionable(monkeypatch):
     for key in ("GPT_API_BASE", "GPT_API_KEY", "GPT_MODEL"):
         monkeypatch.delenv(key, raising=False)

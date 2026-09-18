@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 import os
+import fnmatch
+import shlex
 import subprocess
 import uuid
 from pathlib import Path
@@ -10,7 +12,7 @@ from typing import Any, Dict, Optional
 
 from .models import ExecutionReport, OrchestrationState, ReviewResult, TaskContract, utc_now
 from .persistence import StateStore
-from .security import git_diff, git_snapshot, safe_workspace, redact
+from .security import git_diff, git_snapshot, safe_workspace, redact, secret_values_from_env
 
 
 class WorkflowError(RuntimeError):
@@ -151,17 +153,36 @@ class Orchestrator:
 
     def _validating(self, state: OrchestrationState) -> None:
         report = state.execution_reports[-1] if state.execution_reports else {}
-        validation = self._validate_workspace(state.workspace)
+        validation = self._validate_workspace(
+            state.workspace,
+            contract=state.task_contract,
+            reported_changed_files=report.get("changed_files", []),
+            baseline_commit=state.baseline_git.get("commit"),
+        )
         state.test_results.append(validation)
         if not report.get("ok", False):
             state.metadata.setdefault("validation_issues", []).append("executor reported failure")
+        if not validation.get("ok", False):
+            state.metadata.setdefault("validation_issues", []).extend(
+                str(issue) for issue in validation.get("issues", [])
+            )
         state.metadata["git_diff"] = git_diff(state.workspace, state.baseline_git.get("commit"))
         state.git_state = git_snapshot(state.workspace)
         state.completed_steps.append(f"validation-{state.iteration + 1}")
+        violations = validation.get("allowed_path_violations", [])
+        if violations:
+            # A path-policy violation is a safety boundary, so do not hand it
+            # to a reviewer as an ordinary repair request.  Persist all Git
+            # evidence above, then stop before another executor call.
+            self._block(
+                state,
+                "changed files outside allowed_paths: " + ", ".join(violations),
+            )
+            return
         state.transition("REVIEWING")
 
     def _reviewing(self, state: OrchestrationState) -> None:
-        evidence = {"execution_report": state.execution_reports[-1] if state.execution_reports else {}, "test_results": state.test_results[-1] if state.test_results else {}, "git_diff": state.metadata.get("git_diff", ""), "git_state": state.git_state}
+        evidence = {"execution_report": state.execution_reports[-1] if state.execution_reports else {}, "test_results": state.test_results[-1] if state.test_results else {}, "validation_issues": state.metadata.get("validation_issues", []), "git_diff": state.metadata.get("git_diff", ""), "git_state": state.git_state}
         previous = [str(item.get("notes", "")) for item in state.reviewer_feedback]
         result = self.reviewer.review(state.original_goal, state.task_contract, evidence, previous)
         if not isinstance(result, ReviewResult):
@@ -200,13 +221,203 @@ class Orchestrator:
         return "Repository files:\n" + "\n".join(sorted(files))
 
     @staticmethod
-    def _validate_workspace(workspace: str) -> dict:
+    def _validate_workspace(
+        workspace: str,
+        *,
+        contract: Optional[TaskContract] = None,
+        reported_changed_files: Optional[list[str]] = None,
+        baseline_commit: Optional[str] = None,
+        command_timeout: float = 300.0,
+    ) -> dict:
         root = safe_workspace(workspace)
         commands = []
-        # The executor is responsible for project-specific tests; always collect Git evidence.
+        issues: list[str] = []
+        secrets = secret_values_from_env()
+
+        # The executor is responsible for project-specific tests, but the
+        # planner may provide concrete validation commands.  Parse each command
+        # into argv and always use shell=False so shell metacharacters are never
+        # evaluated by a child shell.
+        validation_commands = list(getattr(contract, "validation_commands", ()) or ())
+        for command in validation_commands:
+            command_text = str(command or "").strip()
+            entry: dict[str, Any] = {"command": redact(command_text, secrets)}
+            if not command_text:
+                entry.update({"error": "empty_command", "returncode": None})
+                commands.append(entry)
+                issues.append("validation command is empty")
+                continue
+            try:
+                argv = shlex.split(command_text, posix=True)
+            except ValueError as exc:
+                entry.update({"error": "invalid_command", "detail": redact(str(exc), secrets), "returncode": None})
+                commands.append(entry)
+                issues.append(f"invalid validation command: {redact(str(exc), secrets)}")
+                continue
+            if not argv:
+                entry.update({"error": "empty_command", "returncode": None})
+                commands.append(entry)
+                issues.append("validation command is empty")
+                continue
+            # Keep command evidence useful without persisting a workspace path
+            # or inline credentials.  The actual subprocess receives argv.
+            safe_argv = [redact(token, secrets) for token in argv]
+            entry["argv"] = safe_argv
+            try:
+                result = subprocess.run(
+                    argv,
+                    cwd=str(root),
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                    shell=False,
+                    timeout=command_timeout,
+                )
+            except subprocess.TimeoutExpired as exc:
+                entry.update(
+                    {
+                        "returncode": None,
+                        "error": "timeout",
+                        "stdout": redact(exc.stdout or "", secrets),
+                        "stderr": redact(exc.stderr or "", secrets),
+                    }
+                )
+                issues.append(f"validation command timed out: {safe_argv[0]}")
+                commands.append(entry)
+                continue
+            except (OSError, ValueError) as exc:
+                entry.update({"returncode": None, "error": "could_not_start", "stderr": redact(str(exc), secrets)})
+                issues.append(f"validation command could not start: {safe_argv[0]}")
+                commands.append(entry)
+                continue
+            entry.update(
+                {
+                    "returncode": result.returncode,
+                    "stdout": redact(result.stdout, secrets),
+                    "stderr": redact(result.stderr, secrets),
+                }
+            )
+            commands.append(entry)
+            if result.returncode != 0:
+                issues.append(f"validation command failed ({result.returncode}): {safe_argv[0]}")
+
+        # Always collect Git evidence, including files the executor omitted from
+        # its self-reported completion packet.  This makes the allowed-path
+        # check authoritative over the actual workspace state.
         result = subprocess.run(["git", "-C", str(root), "status", "--short"], text=True, capture_output=True, check=False)
-        commands.append({"argv": ["git", "status", "--short"], "returncode": result.returncode, "stdout": redact(result.stdout), "stderr": redact(result.stderr)})
-        return {"ok": result.returncode == 0, "commands": commands, "evidence": ["git status collected"]}
+        commands.append({"argv": ["git", "status", "--short"], "returncode": result.returncode, "stdout": redact(result.stdout, secrets), "stderr": redact(result.stderr, secrets)})
+        if result.returncode != 0:
+            issues.append("git status failed")
+
+        changed_files = Orchestrator._changed_files(root, baseline=baseline_commit)
+        # ``git diff`` against the baseline is assembled by the caller for the
+        # reviewer.  Here we use the current status plus the executor report;
+        # this also catches untracked files that git diff does not list.
+        status_files = Orchestrator._status_changed_files(result.stdout)
+        all_changed = []
+        for item in [*(reported_changed_files or []), *status_files, *changed_files]:
+            normalized = Orchestrator._normalize_changed_file(item, root)
+            if normalized not in all_changed:
+                all_changed.append(normalized)
+
+        allowed_paths = list(getattr(contract, "allowed_paths", ()) or ()) if contract is not None else []
+        violations: list[str] = []
+        if allowed_paths:
+            violations = [path for path in all_changed if path and not Orchestrator._path_allowed(path, allowed_paths)]
+            if violations:
+                issues.append("changed files outside allowed_paths: " + ", ".join(violations))
+        evidence = ["git status collected"]
+        if validation_commands:
+            evidence.append(f"executed {len(validation_commands)} validation command(s)")
+        if allowed_paths:
+            evidence.append("allowed_paths checked against reported and workspace changes")
+        return {
+            "ok": result.returncode == 0 and not issues,
+            "commands": commands,
+            "evidence": evidence,
+            "issues": issues,
+            "changed_files": all_changed,
+            "allowed_paths": allowed_paths,
+            "allowed_path_violations": violations,
+        }
+
+    @staticmethod
+    def _status_changed_files(status: str) -> list[str]:
+        """Extract paths from porcelain status output without exposing cwd."""
+        paths: list[str] = []
+        for line in str(status or "").splitlines():
+            if len(line) < 3:
+                continue
+            payload = line[3:]
+            # Rename/copy records are ``old -> new``; the destination is the
+            # path that must be allowed.
+            if " -> " in payload:
+                payload = payload.rsplit(" -> ", 1)[-1]
+            payload = payload.strip().strip('"')
+            if payload:
+                paths.append(payload)
+        return paths
+
+    @staticmethod
+    def _changed_files(root: Path, baseline: Optional[str] = None) -> list[str]:
+        """Return tracked and untracked changed paths relative to *root*."""
+        args = ["git", "-C", str(root), "diff", "--name-only"]
+        if baseline:
+            args.append(baseline)
+        args.append("--")
+        diff = subprocess.run(args, text=True, capture_output=True, check=False)
+        others = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "--others", "--exclude-standard"],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        return [line.strip() for line in (diff.stdout + "\n" + others.stdout).splitlines() if line.strip()]
+
+    @staticmethod
+    def _normalize_changed_file(value: object, root: Path) -> str:
+        raw = str(value or "").strip().strip('"').replace("\\", "/")
+        if not raw:
+            return ""
+        candidate = Path(raw)
+        if candidate.is_absolute():
+            try:
+                raw = candidate.resolve().relative_to(root).as_posix()
+            except ValueError:
+                return "<outside-workspace>"
+        while raw.startswith("./"):
+            raw = raw[2:]
+        # Executor-reported paths are untrusted. A relative traversal must not
+        # be made safe merely by string normalization below.
+        if raw == ".." or raw.startswith("../"):
+            return "<outside-workspace>"
+        return raw or "."
+
+    @staticmethod
+    def _path_allowed(path: str, allowed_paths: list[str]) -> bool:
+        if path == "<outside-workspace>":
+            return False
+        rel = str(path).replace("\\", "/")
+        while rel.startswith("./"):
+            rel = rel[2:]
+        if rel == ".." or rel.startswith("../") or rel.startswith("/"):
+            return False
+        for rule_value in allowed_paths:
+            rule = str(rule_value or "").strip().replace("\\", "/")
+            if not rule or rule in {".", "./", "*", "**"}:
+                return True
+            # Rules that escape the repository can never grant permission.
+            if rule.startswith("/") or rule == ".." or rule.startswith("../"):
+                continue
+            while rule.startswith("./"):
+                rule = rule[2:]
+            if fnmatch.fnmatchcase(rel, rule):
+                return True
+            # A plain directory rule grants its descendants.  Wildcard rules
+            # retain their exact fnmatch semantics.
+            if not any(mark in rule for mark in "*?[") and rel.startswith(rule.rstrip("/") + "/"):
+                return True
+        return False
 
 
 def run_goal(original_goal: str, workspace: str, *, planner: Any, executor: Any, reviewer: Any | None = None, state_dir: str = ".orchestrator", max_iterations: int = 3) -> OrchestrationState:

@@ -68,9 +68,16 @@ def run_cli(goal: str, workspace: str, *, state_dir: str = ".orchestrator", max_
     return runner.run(created.task_id)
 
 
-def resume_cli(task_id: str, *, state_dir: str = ".orchestrator", fake: bool = False):
+def resume_cli(task_id: str, *, state_dir: str = ".orchestrator", workspace: str | None = None, fake: bool = False):
+    store = StateStore(state_dir)
+    persisted = store.load(task_id)
+    if workspace is not None:
+        requested = Path(workspace).expanduser().resolve()
+        recorded = Path(persisted.workspace).expanduser().resolve()
+        if requested != recorded:
+            raise WorkflowError("--workspace does not match the workspace recorded for this task")
     planner, executor, reviewer = _providers(fake)
-    runner = Orchestrator(StateStore(state_dir), planner, executor, reviewer)
+    runner = Orchestrator(store, planner, executor, reviewer)
     return runner.resume(task_id)
 
 
@@ -80,7 +87,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "run":
             state = run_cli(args.goal, args.workspace, state_dir=args.state_dir, max_iterations=args.max_iterations, fake=args.fake)
         elif args.command == "resume":
-            state = resume_cli(args.task_id, state_dir=args.state_dir, fake=args.fake)
+            state = resume_cli(args.task_id, state_dir=args.state_dir, workspace=args.workspace, fake=args.fake)
         elif args.command == "ask":
             store = StateStore(args.state_dir)
             state = Orchestrator(store, FakeAdapter(), FakeAdapter()).request_input(args.task_id, args.question, context=args.context)

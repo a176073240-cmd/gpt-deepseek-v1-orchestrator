@@ -78,3 +78,137 @@ def test_e_blocked_persists_reason_and_resumes(tmp_path):
     store.save(blocked)
     resumed = runner.resume(created.task_id)
     assert resumed.phase == "COMPLETED"
+
+
+def test_e_human_question_answer_round_trip(tmp_path):
+    """A persisted human question can be answered without re-planning."""
+    adapter = FakeAdapter()
+    root = repo(tmp_path)
+    store = StateStore(tmp_path / "state")
+    runner = Orchestrator(store, adapter, adapter, adapter)
+    created = runner.create("needs a human choice", str(root))
+
+    partial = runner.run(created.task_id, stop_after_phase="EXECUTING")
+    assert partial.phase == "EXECUTING"
+
+    blocked = runner.request_input(
+        created.task_id,
+        "Which compatibility policy should be used?",
+        context="Two existing formats are present.",
+    )
+    assert blocked.phase == "BLOCKED"
+    pending = blocked.metadata["pending_question"]
+    assert pending["status"] == "pending"
+
+    answered = runner.answer_input(
+        created.task_id,
+        "Keep the existing format and add the new one.",
+        question_id=pending["question_id"],
+    )
+    assert answered.phase == "EXECUTING"
+    resumed = runner.resume(created.task_id)
+
+    assert resumed.phase == "COMPLETED"
+    assert resumed.metadata["human_answer"] == "Keep the existing format and add the new one."
+    assert adapter.plan_calls == 1
+
+
+def test_validation_runs_contract_commands_and_records_evidence(tmp_path):
+    """Planner-supplied checks run in the repository and are persisted."""
+    root = repo(tmp_path)
+    command = f'"{Path(sys.executable).as_posix()}" -c "print(\'validation-ok\')"'
+    contract = TaskContract(
+        goal_interpretation="run a validation check",
+        scope=["fixture"],
+        implementation_plan=["run check"],
+        acceptance_criteria=["check succeeds"],
+        validation_requirements=["the check exits successfully"],
+        validation_commands=[command],
+        allowed_paths=["."],
+    )
+    adapter = FakeAdapter(contract=contract)
+    runner = Orchestrator(StateStore(tmp_path / "state"), adapter, adapter, adapter)
+    created = runner.create("run a validation check", str(root))
+
+    state = runner.run(created.task_id)
+
+    assert state.phase == "COMPLETED"
+    validation = state.test_results[0]
+    command_result = validation["commands"][0]
+    assert command_result["returncode"] == 0
+    assert "validation-ok" in command_result["stdout"]
+    assert validation["ok"] is True
+    assert "executed 1 validation command(s)" in validation["evidence"]
+
+
+def test_validation_failure_is_recorded_as_failed_evidence(tmp_path):
+    root = repo(tmp_path)
+    command = f'"{Path(sys.executable).as_posix()}" -c "import sys; sys.exit(7)"'
+    contract = TaskContract(
+        goal_interpretation="run a failing check",
+        scope=["fixture"],
+        implementation_plan=["run check"],
+        acceptance_criteria=["failure is visible"],
+        validation_requirements=["the check result is recorded"],
+        validation_commands=[command],
+        allowed_paths=["."],
+    )
+    adapter = FakeAdapter(contract=contract)
+    runner = Orchestrator(StateStore(tmp_path / "state"), adapter, adapter, adapter)
+    created = runner.create("run a failing check", str(root))
+
+    state = runner.run(created.task_id)
+
+    validation = state.test_results[0]
+    assert validation["ok"] is False
+    assert validation["commands"][0]["returncode"] == 7
+    assert any("validation command failed" in issue for issue in validation["issues"])
+    assert any("validation command failed" in issue for issue in state.metadata["validation_issues"])
+
+
+def test_allowed_path_violation_blocks_before_review(tmp_path):
+    root = repo(tmp_path)
+    contract = TaskContract(
+        goal_interpretation="limit edits",
+        scope=["src files"],
+        implementation_plan=["edit src"],
+        acceptance_criteria=["only src changes"],
+        validation_requirements=["check changed paths"],
+        allowed_paths=["src/**"],
+    )
+    adapter = FakeAdapter(
+        contract=contract,
+        reports=[ExecutionReport(ok=True, changed_files=["README.md"])],
+    )
+    runner = Orchestrator(StateStore(tmp_path / "state"), adapter, adapter, adapter)
+    created = runner.create("limit edits", str(root))
+
+    state = runner.run(created.task_id)
+
+    assert state.phase == "BLOCKED"
+    assert "outside allowed_paths" in state.block_reason
+    assert state.test_results[0]["allowed_path_violations"] == ["README.md"]
+    assert adapter.review_calls == 0
+
+
+def test_allowed_path_rejects_reported_parent_traversal(tmp_path):
+    root = repo(tmp_path)
+    contract = TaskContract(
+        goal_interpretation="reject escaped paths",
+        scope=["fixture"],
+        implementation_plan=["check paths"],
+        acceptance_criteria=["escaped paths are blocked"],
+        validation_requirements=["check changed paths"],
+        allowed_paths=["secret"],
+    )
+    adapter = FakeAdapter(
+        contract=contract,
+        reports=[ExecutionReport(ok=True, changed_files=["../secret"])],
+    )
+    runner = Orchestrator(StateStore(tmp_path / "state"), adapter, adapter, adapter)
+    created = runner.create("reject escaped paths", str(root))
+
+    state = runner.run(created.task_id)
+
+    assert state.phase == "BLOCKED"
+    assert state.test_results[0]["allowed_path_violations"] == ["<outside-workspace>"]
