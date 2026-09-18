@@ -98,7 +98,19 @@ def check_provider(prefix: str) -> tuple[bool, str]:
 
 
 def check_dsh() -> tuple[bool, str]:
-    raw = os.getenv("DSH_COMMAND", "dsh")
+    configured = os.getenv("DSH_COMMAND")
+    if configured:
+        raw = configured
+        source = "DSH_COMMAND"
+    elif shutil.which("dsh"):
+        raw = "dsh"
+        source = "PATH dsh"
+    elif (ROOT / "work" / "upstream" / "deepseek-harness" / "package.json").is_file():
+        raw = "node --import tsx/esm apps/cli/src/bin.ts"
+        source = "project source Harness"
+    else:
+        raw = "dsh"
+        source = "PATH dsh"
     try:
         command = shlex.split(raw, posix=False)
     except ValueError as exc:
@@ -109,14 +121,27 @@ def check_dsh() -> tuple[bool, str]:
     if resolved:
         command[0] = resolved
     try:
-        result = subprocess.run(command + ["--version"], cwd=ROOT, capture_output=True, text=True, timeout=20, check=False)
+        harness_root = ROOT / "work" / "upstream" / "deepseek-harness"
+        run_cwd = harness_root if source == "project source Harness" else ROOT
+        result = subprocess.run(
+            command + ["--version"],
+            cwd=run_cwd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=20,
+            check=False,
+        )
     except FileNotFoundError:
         return False, f"Executable not found: {command[0]}"
     except (OSError, subprocess.TimeoutExpired) as exc:
         return False, f"Could not start dsh: {exc}"
     output = (result.stdout or result.stderr or "").strip().splitlines()
     version = output[-1] if output else "no version output"
-    return (result.returncode == 0, version if result.returncode == 0 else f"exit code {result.returncode}: {version}")
+    if result.returncode == 0:
+        return True, f"{version}; source: {source}"
+    return False, f"source: {source}; exit code {result.returncode}: {version}"
 
 
 def report(label: str, ok: bool, detail: str) -> None:
