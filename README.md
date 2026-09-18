@@ -2,6 +2,8 @@
 
 GPT-DeepSeek V1 Orchestrator is an **autonomous coding workflow system** for Git repositories. It turns a natural-language goal into a structured task contract, asks a DeepSeek Harness session to carry out the work, validates the resulting workspace, and sends the evidence to a GPT-compatible reviewer. The workflow can retry a revision, persist its state, resume after an interruption, or pause for a human decision.
 
+V1.1 has been validated with real GPT planning, DeepSeek Harness execution, reviewer-driven `REVISE` to `PASS` recovery, persistence/resume, and an evidence chain. The release keeps the original V1 architecture and does not include V2 routing, multi-agent, or UI features.
+
 ## Architecture
 
 ```mermaid
