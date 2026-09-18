@@ -44,6 +44,16 @@ def endpoint(base: str) -> str:
     return base if base.endswith("/chat/completions") else base + "/chat/completions"
 
 
+def provider_timeout(prefix: str) -> float:
+    """Return a provider-specific timeout without exposing any credentials."""
+    defaults = {"GPT": "300", "DEEPSEEK": "60"}
+    raw = os.getenv(f"{prefix}_API_TIMEOUT", defaults.get(prefix, "60"))
+    try:
+        return max(1.0, float(raw))
+    except ValueError:
+        return float(defaults.get(prefix, "60"))
+
+
 def check_provider(prefix: str) -> tuple[bool, str]:
     missing = required(f"{prefix}_API_KEY", f"{prefix}_API_BASE", f"{prefix}_MODEL")
     if missing:
@@ -65,7 +75,8 @@ def check_provider(prefix: str) -> tuple[bool, str]:
         method="POST",
     )
     try:
-        with urllib.request.urlopen(request, timeout=float(os.getenv("PROVIDER_SMOKE_TIMEOUT", "20"))) as response:
+        timeout = provider_timeout(prefix)
+        with urllib.request.urlopen(request, timeout=timeout) as response:
             body = json.loads(response.read().decode("utf-8"))
         choices = body.get("choices") if isinstance(body, dict) else None
         if not isinstance(choices, list) or not choices:
@@ -74,8 +85,13 @@ def check_provider(prefix: str) -> tuple[bool, str]:
     except urllib.error.HTTPError as exc:
         return False, f"HTTP {exc.code}: provider rejected the request (check endpoint, model, or API key)"
     except urllib.error.URLError as exc:
-        return False, f"Connection failed: {exc.reason}"
-    except (TimeoutError, OSError) as exc:
+        reason = getattr(exc, "reason", None)
+        if isinstance(reason, TimeoutError) or str(reason).lower() in ("timed out", "timeout"):
+            return False, f"Request timed out after {timeout:.0f} seconds; increase {prefix}_API_TIMEOUT if needed"
+        return False, f"Connection failed: {reason}"
+    except TimeoutError:
+        return False, f"Request timed out after {timeout:.0f} seconds; increase {prefix}_API_TIMEOUT if needed"
+    except OSError as exc:
         return False, f"Connection failed: {exc}"
     except (json.JSONDecodeError, UnicodeDecodeError):
         return False, "Provider returned a non-JSON response"
