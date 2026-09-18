@@ -205,7 +205,7 @@ class DeepSeekHarnessAdapter:
             child_env.setdefault("DEEPSEEK_MODEL", self.model)
         secrets = secret_values_from_env(child_env)
         try:
-            proc = subprocess.run(command, cwd=workspace, env=child_env, text=True, capture_output=True, timeout=self.timeout, check=False, shell=False)
+            proc = subprocess.run(command, cwd=workspace, env=child_env, text=True, encoding="utf-8", errors="replace", capture_output=True, timeout=self.timeout, check=False, shell=False)
             output = redact(proc.stdout or "", secrets)
             error = redact(proc.stderr or "", secrets)
             # Fresh runs must use the id emitted by dsh. A locally generated

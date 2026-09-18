@@ -60,6 +60,25 @@ def test_dsh_run_uses_observed_session_and_redacts_evidence(monkeypatch, tmp_pat
     assert "test-secret" not in report.raw_output
 
 
+def test_dsh_run_decodes_harness_output_as_utf8_with_replacement(monkeypatch):
+    captured = {}
+
+    def fake_run(command, **kwargs):
+        captured.update(kwargs)
+        return type("Result", (), {
+            "returncode": 0,
+            "stdout": '{"type":"session","sessionId":"utf8-42"}\n',
+            "stderr": "",
+        })()
+
+    monkeypatch.setattr("v1_orchestrator.adapters.subprocess.run", fake_run)
+    report = DeepSeekHarnessAdapter(executable="dsh", env={}).run("task", ".")
+
+    assert report.session_id == "utf8-42"
+    assert captured["encoding"] == "utf-8"
+    assert captured["errors"] == "replace"
+
+
 def test_dsh_fresh_run_does_not_fabricate_session_id(monkeypatch, tmp_path):
     def fake_run(command, **kwargs):
         return type("Result", (), {"returncode": 1, "stdout": "", "stderr": "failed before session"})()
