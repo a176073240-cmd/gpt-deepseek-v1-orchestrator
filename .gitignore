@@ -1,0 +1,50 @@
+# Python bytecode and test/tool caches
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Orchestrator and harness runtime data
+.orchestrator/
+logs/
+*.log
+*.jsonl
+*.zstd
+*.sqlite
+*.sqlite3
+*.db
+work/dsh-home-*/
+work/**/node_modules/
+work/**/.dsh-build/
+work/**/dist/
+
+# Local credentials and secret material
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*credential*
+*credentials*
+*secret*
+*secrets*
+
+# Operating-system/editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
