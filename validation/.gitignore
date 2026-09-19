@@ -1,0 +1,25 @@
+# Validation runtime and Python-generated files
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.venv/
+
+# Local validation state and output
+logs/
+sessions/
+state/
+cache/
+outputs/
+*.log
+*.jsonl
+*.sqlite
+*.sqlite3
+*.db
+
+# Local environment and credentials
+.env
+.env.*
+*.pem
+*.key
+*credential*
+*secret*
