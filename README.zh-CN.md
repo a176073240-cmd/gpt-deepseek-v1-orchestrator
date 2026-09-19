@@ -62,6 +62,20 @@ Planner 与 Reviewer 使用兼容 OpenAI 的 POST /chat/completions 接口。Exe
 - 秘密值脱敏与工作区边界检查
 - 使用临时 Git fixture 的确定性测试
 
+## 下载
+
+Windows 用户可以直接下载桌面版本：
+
+**GPT-DeepSeek v1.2.0 Windows x64**
+
+下载地址：
+
+[GitHub Release v1.2.0](https://github.com/a176073240-cmd/gpt-deepseek-v1-orchestrator/releases/tag/v1.2.0)
+
+- 图形化界面
+- 无需安装 Python
+- 支持任务输入和状态查看
+
 ## Installation
 
 要求：Python 3.10+、Git；真实执行还需要 Node.js、DeepSeek Harness 与兼容 OpenAI 的 API Provider。

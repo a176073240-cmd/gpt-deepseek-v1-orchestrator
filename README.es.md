@@ -62,6 +62,20 @@ Planner y Reviewer usan POST /chat/completions compatible con OpenAI. Executor i
 - Ocultación de secretos y límites del workspace
 - Pruebas deterministas con fixtures Git temporales
 
+## Descarga
+
+Los usuarios de Windows pueden descargar la última versión de escritorio:
+
+**GPT-DeepSeek v1.2.0 Windows x64**
+
+Descarga:
+
+[GitHub Release v1.2.0](https://github.com/a176073240-cmd/gpt-deepseek-v1-orchestrator/releases/tag/v1.2.0)
+
+- Aplicación de escritorio para Windows
+- No requiere instalar Python
+- Incluye GUI Launcher
+
 ## Installation
 
 Requiere Python 3.10 o posterior y Git. La ejecución real también necesita Node.js, DeepSeek Harness y un proveedor API compatible con OpenAI.

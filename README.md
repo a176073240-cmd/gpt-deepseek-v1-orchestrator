@@ -24,7 +24,7 @@ V1.1.0 includes persistence, resume, human escalation, and an evidence chain. It
 | **Best for** | Teams that want durable contracts, reproducible evidence, and bounded automated repair |
 | **Current status** | V1.1.0 released; V1.2-A open-source productization in progress |
 
-**Start here:** [Quick Start](#quick-start) · [GUI Launcher](#windows-gui-launcher) · [Author's Recommended API Setup](#authors-recommended-api-setup) · [Guided Demo](docs/demo-workflow.md) · [Architecture](docs/architecture.md) · [User Guide](docs/user-guide.md)
+**Start here:** [Download](#download) · [Quick Start](#quick-start) · [GUI Launcher](#windows-gui-launcher) · [Author's Recommended API Setup](#authors-recommended-api-setup) · [Guided Demo](docs/demo-workflow.md) · [Architecture](docs/architecture.md) · [User Guide](docs/user-guide.md)
 
 ## Why this project
 
@@ -77,6 +77,20 @@ The planner and reviewer use an OpenAI-compatible POST /chat/completions endpoin
 - JSON output for automation
 - Secret redaction and workspace boundary validation
 - Deterministic tests with temporary Git fixtures
+
+## Download
+
+Windows users can download the latest desktop version:
+
+**GPT-DeepSeek v1.2.0 Windows x64**
+
+Download:
+
+GitHub Releases: [https://github.com/a176073240-cmd/gpt-deepseek-v1-orchestrator/releases/tag/v1.2.0](https://github.com/a176073240-cmd/gpt-deepseek-v1-orchestrator/releases/tag/v1.2.0)
+
+- Windows desktop application
+- No Python installation required
+- Includes GUI Launcher
 
 ## Installation
 

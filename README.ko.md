@@ -62,6 +62,20 @@ Planner와 Reviewer는 OpenAI 호환 POST /chat/completions를 사용합니다. 
 - 비밀 값 마스킹과 작업 공간 경계 검사
 - 임시 Git fixture를 사용하는 결정적 테스트
 
+## 다운로드
+
+Windows 사용자는 최신 데스크톱 버전을 다운로드할 수 있습니다.
+
+**GPT-DeepSeek v1.2.0 Windows x64**
+
+다운로드:
+
+[GitHub Release v1.2.0](https://github.com/a176073240-cmd/gpt-deepseek-v1-orchestrator/releases/tag/v1.2.0)
+
+- Windows 데스크톱 애플리케이션
+- Python 설치 불필요
+- GUI Launcher 포함
+
 ## Installation
 
 요구 사항은 Python 3.10 이상과 Git입니다. 실제 실행에는 Node.js, DeepSeek Harness, OpenAI 호환 API Provider도 필요합니다.
