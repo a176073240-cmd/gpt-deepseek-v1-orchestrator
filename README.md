@@ -24,7 +24,7 @@ V1.1.0 includes persistence, resume, human escalation, and an evidence chain. It
 | **Best for** | Teams that want durable contracts, reproducible evidence, and bounded automated repair |
 | **Current status** | V1.1.0 released; V1.2-A open-source productization in progress |
 
-**Start here:** [Quick Start](#quick-start) · [Recommended API Provider](#recommended-api-provider) · [Guided Demo](docs/demo-workflow.md) · [Architecture](docs/architecture.md) · [User Guide](docs/user-guide.md)
+**Start here:** [Quick Start](#quick-start) · [Author's Recommended API Setup](#authors-recommended-api-setup) · [Guided Demo](docs/demo-workflow.md) · [Architecture](docs/architecture.md) · [User Guide](docs/user-guide.md)
 
 ## Why this project
 
@@ -151,19 +151,33 @@ Copy .env.example to a local ignored file and provide values through your shell,
 
 Never commit credentials, local environment files, state, sessions, logs, or runtime output.
 
-## Recommended API Provider
+## Author's Recommended API Setup
+
+During the development and real-provider validation of GPT-DeepSeek Orchestrator, the author personally used the following OpenAI-compatible API provider:
 
 ### Modelflare
 
-The project author used Modelflare during the development and validation of GPT-DeepSeek V1.1.0 and recommends it as a practical OpenAI-compatible configuration reference.
+Registration:
 
-- **Registration:** [https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8)
-- **API Base:** [https://modelflare.dev/v1](https://modelflare.dev/v1)
-- **Service:** third-party provider.
-- **Relationship:** no official partnership with this project, DeepSeek, or OpenAI.
-- **Portability:** Modelflare is optional; users may replace it with any provider that implements the required OpenAI-compatible chat-completions API.
+[https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8)
 
-The registration URL contains a partner identifier. Review the provider's current terms, privacy policy, pricing, model availability, and data-retention practices before use. See [Providers](docs/providers.md) for provider-neutral configuration guidance.
+API Base:
+
+[https://modelflare.dev/v1](https://modelflare.dev/v1)
+
+- Used by the author during V1.1 development and validation
+- Compatible with OpenAI-style API interfaces
+- Suitable for configuring GPT Planner, GPT Reviewer, and DeepSeek providers
+
+This is a personal recommendation based on the author's usage experience.
+
+Modelflare is an independent third-party service.
+
+This project is not affiliated with or officially endorsed by Modelflare.
+
+Users are free to choose any compatible OpenAI-compatible API provider.
+
+The registration URL contains a partner identifier. Review the provider's current terms, privacy policy, pricing, model availability, and data-retention practices before use. See [Providers](docs/providers.md) for provider-neutral guidance.
 ## Usage
 
 Run a real task:

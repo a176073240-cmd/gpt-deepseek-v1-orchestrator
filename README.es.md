@@ -105,19 +105,33 @@ Copia .env.example a un archivo local ignorado y proporciona variables mediante 
 
 No incluyas en commits credenciales, archivos locales de entorno, state, sessions, logs ni resultados de ejecución.
 
-## Recommended API Provider
+## Configuración de API recomendada por el autor
+
+Durante el desarrollo y la validación con Providers reales de GPT-DeepSeek Orchestrator, el autor utilizó personalmente el siguiente Provider OpenAI-compatible.
 
 ### Modelflare
 
-El autor utilizó Modelflare durante el desarrollo y la validación de GPT-DeepSeek V1.1.0 y lo recomienda como referencia práctica de configuración OpenAI-compatible.
+Registro:
 
-- **Registro:** [https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8)
-- **API Base:** [https://modelflare.dev/v1](https://modelflare.dev/v1)
-- **Servicio:** Provider de terceros.
-- **Relación:** no existe colaboración oficial con este proyecto, DeepSeek ni OpenAI.
-- **Sustitución:** Modelflare es opcional; se puede usar cualquier Provider que implemente la API de chat-completions compatible requerida.
+[https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8)
 
-La URL de registro contiene un identificador partner. Revisa los términos, privacidad, precios, modelos y retención de datos vigentes antes de usar el servicio. Consulta [Providers](docs/providers.md) para una configuración neutral.
+API Base:
+
+[https://modelflare.dev/v1](https://modelflare.dev/v1)
+
+- Utilizado por el autor durante el desarrollo y la validación de V1.1
+- Compatible con interfaces API de estilo OpenAI
+- Adecuado para configurar GPT Planner, GPT Reviewer y DeepSeek Provider
+
+Esta es una recomendación personal basada en la experiencia de uso del autor.
+
+Modelflare es un servicio independiente de terceros.
+
+Este proyecto no está afiliado con Modelflare ni cuenta con su respaldo oficial.
+
+Los usuarios pueden elegir libremente cualquier Provider OpenAI-compatible.
+
+La URL de registro contiene un identificador partner. Revisa los términos, privacidad, precios, modelos y retención de datos antes de usar el servicio. Consulta [Providers](docs/providers.md) para una configuración neutral.
 ## Usage
 
 ~~~bash

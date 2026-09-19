@@ -105,19 +105,33 @@ python orchestrator.py run "Inspect this fixture" --workspace /path/to/git-fixtu
 
 자격 증명, 로컬 환경 파일, state, sessions, logs 또는 런타임 출력을 커밋하지 마세요.
 
-## Recommended API Provider
+## 작성자 추천 API 설정
+
+GPT-DeepSeek Orchestrator의 개발 및 실제 Provider 검증 과정에서 작성자는 다음 OpenAI-compatible API Provider를 직접 사용했습니다.
 
 ### Modelflare
 
-작성자는 GPT-DeepSeek V1.1.0의 개발과 검증 과정에서 Modelflare를 실제로 사용했으며 OpenAI-compatible 구성 참고용으로 권장합니다.
+등록:
 
-- **등록:** [https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8)
-- **API Base:** [https://modelflare.dev/v1](https://modelflare.dev/v1)
-- **서비스:** 제3자 Provider입니다.
-- **관계:** 본 프로젝트, DeepSeek 또는 OpenAI와의 공식 파트너십이 아닙니다.
-- **대체 가능성:** Modelflare는 필수가 아니며 필요한 OpenAI-compatible chat-completions API를 구현한 다른 Provider로 교체할 수 있습니다.
+[https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8)
 
-등록 URL에는 partner 식별자가 포함됩니다. 사용 전에 최신 약관, 개인정보 정책, 가격, 모델 가용성, 데이터 보존 정책을 확인하세요. 일반 설정은 [Providers](docs/providers.md)를 참조하세요.
+API Base:
+
+[https://modelflare.dev/v1](https://modelflare.dev/v1)
+
+- V1.1 개발 및 검증 중 작성자가 직접 사용
+- OpenAI-style API 인터페이스와 호환
+- GPT Planner, GPT Reviewer 및 DeepSeek Provider 구성에 사용 가능
+
+이 추천은 작성자의 개인 사용 경험을 바탕으로 합니다.
+
+Modelflare는 독립적인 제3자 서비스입니다.
+
+본 프로젝트는 Modelflare와 제휴하지 않았으며 공식적인 보증을 받지 않았습니다.
+
+사용자는 다른 호환 OpenAI-compatible API Provider를 자유롭게 선택할 수 있습니다.
+
+등록 URL에는 partner 식별자가 포함됩니다. 사용 전에 약관, 개인정보 정책, 가격, 모델 가용성, 데이터 보존 정책을 확인하세요. 일반 설정은 [Providers](docs/providers.md)를 참조하세요.
 ## Usage
 
 ~~~bash

@@ -105,17 +105,31 @@ python orchestrator.py run "Inspect this fixture" --workspace /path/to/git-fixtu
 
 不要提交凭据、本地环境文件、state、sessions、logs 或运行输出。
 
-## Recommended API Provider
+## 作者推荐 API 配置
+
+在 GPT-DeepSeek Orchestrator 的开发和真实 Provider 验证过程中，作者本人实际使用以下 OpenAI-compatible API 服务。
 
 ### Modelflare
 
-作者本人在 GPT-DeepSeek V1.1.0 的开发和验证过程中实际使用了 Modelflare，并推荐将其作为 OpenAI-compatible 配置参考。
+注册链接：
 
-- **注册链接：** [https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8)
-- **API Base：** [https://modelflare.dev/v1](https://modelflare.dev/v1)
-- **服务性质：** 第三方 Provider。
-- **合作关系：** 与本项目、DeepSeek 或 OpenAI 均无官方合作关系。
-- **可替换性：** Modelflare 不是必需服务，用户可以替换为任何满足所需 OpenAI-compatible chat-completions API 的 Provider。
+[https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8)
+
+API Base：
+
+[https://modelflare.dev/v1](https://modelflare.dev/v1)
+
+- 作者本人在 V1.1 开发阶段实际使用
+- 用于真实 Provider 验证
+- 可用于 GPT Planner、GPT Reviewer 和 DeepSeek Provider 配置
+
+该推荐基于作者个人使用体验。
+
+Modelflare 是独立第三方服务。
+
+本项目与 Modelflare 没有官方合作关系。
+
+用户可以自由选择其他兼容 OpenAI API 的服务。
 
 注册链接包含 partner 标识。使用前请自行确认服务条款、隐私政策、价格、模型可用性和数据保留政策。通用配置见 [Providers](docs/providers.md)。
 ## Usage

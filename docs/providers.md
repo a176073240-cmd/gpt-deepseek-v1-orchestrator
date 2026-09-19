@@ -21,19 +21,25 @@ DeepSeek Harness execution has its own provider settings:
 
 See [Provider Setup](provider-setup.md) for shell examples and the smoke-test procedure.
 
-## Recommended API Provider
+## Author Recommended Provider Example
+
+The following is an example from the author's own environment. During the development and real-provider validation of GPT-DeepSeek Orchestrator V1.1, the author personally used Modelflare as an OpenAI-compatible API provider.
 
 ### Modelflare
 
-The project author used Modelflare during the development and validation of GPT-DeepSeek V1.1.0 and recommends it as a practical OpenAI-compatible configuration reference.
+Registration:
 
-- **Registration:** [https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8)
-- **API Base:** [https://modelflare.dev/v1](https://modelflare.dev/v1)
+[https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8)
 
-Modelflare is a third-party service. It is not maintained by this project, DeepSeek, or OpenAI, and this recommendation does not represent an official partnership or endorsement. The registration URL contains a partner identifier. Review the provider's current terms, privacy policy, model availability, pricing, and data-retention practices before use.
+API Base:
 
-Modelflare is optional. Any provider that satisfies the compatible endpoint and response requirements may be substituted by changing GPT_API_BASE, GPT_API_KEY, and GPT_MODEL.
+[https://modelflare.dev/v1](https://modelflare.dev/v1)
 
+This is a personal recommendation based on the author's usage experience, not an official project requirement. Modelflare is an independent third-party service. This project is not affiliated with or officially endorsed by Modelflare.
+
+Modelflare is optional. Users may replace it with any provider that satisfies the required OpenAI-compatible endpoint and response format by changing GPT_API_BASE, GPT_API_KEY, and GPT_MODEL.
+
+The registration URL contains a partner identifier. Review the provider's current terms, privacy policy, model availability, pricing, and data-retention practices before use.
 ## Provider-neutral Example
 
 ~~~powershell
