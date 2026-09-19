@@ -105,13 +105,14 @@ python orchestrator.py run "Inspect this fixture" --workspace /path/to/git-fixtu
 
 자격 증명, 로컬 환경 파일, state, sessions, logs 또는 런타임 출력을 커밋하지 마세요.
 
-## Tested API Providers
+## Recommended API Provider
 
 ### Modelflare
 
-작성자는 [Modelflare](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8)와 OpenAI-compatible API Base [https://modelflare.dev/v1](https://modelflare.dev/v1)을 사용해 이 프로젝트를 테스트했습니다.
+작성자는 GPT-DeepSeek V1.1.0의 개발과 검증 과정에서 Modelflare를 실제로 사용했으며 OpenAI-compatible 구성 참고용으로 권장합니다.
 
-- **상태:** 작성자가 테스트한 구성입니다.
+- **등록:** [https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8)
+- **API Base:** [https://modelflare.dev/v1](https://modelflare.dev/v1)
 - **서비스:** 제3자 Provider입니다.
 - **관계:** 본 프로젝트, DeepSeek 또는 OpenAI와의 공식 파트너십이 아닙니다.
 - **대체 가능성:** Modelflare는 필수가 아니며 필요한 OpenAI-compatible chat-completions API를 구현한 다른 Provider로 교체할 수 있습니다.

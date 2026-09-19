@@ -21,13 +21,18 @@ DeepSeek Harness execution has its own provider settings:
 
 See [Provider Setup](provider-setup.md) for shell examples and the smoke-test procedure.
 
-## Author-tested Provider: Modelflare
+## Recommended API Provider
 
-The project author has tested an OpenAI-compatible configuration with [Modelflare](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8).
+### Modelflare
 
-Modelflare is a third-party service. It is not maintained by this project, DeepSeek, or OpenAI, and its inclusion here does not represent an official partnership or endorsement. The sign-up URL contains a partner identifier. Review the provider's current terms, privacy policy, model availability, pricing, and data-retention practices before use.
+The project author used Modelflare during the development and validation of GPT-DeepSeek V1.1.0 and recommends it as a practical OpenAI-compatible configuration reference.
 
-You are not required to use Modelflare. Any provider that satisfies the compatible endpoint and response requirements may be substituted by changing GPT_API_BASE, GPT_API_KEY, and GPT_MODEL.
+- **Registration:** [https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8)
+- **API Base:** [https://modelflare.dev/v1](https://modelflare.dev/v1)
+
+Modelflare is a third-party service. It is not maintained by this project, DeepSeek, or OpenAI, and this recommendation does not represent an official partnership or endorsement. The registration URL contains a partner identifier. Review the provider's current terms, privacy policy, model availability, pricing, and data-retention practices before use.
+
+Modelflare is optional. Any provider that satisfies the compatible endpoint and response requirements may be substituted by changing GPT_API_BASE, GPT_API_KEY, and GPT_MODEL.
 
 ## Provider-neutral Example
 

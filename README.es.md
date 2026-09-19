@@ -105,13 +105,14 @@ Copia .env.example a un archivo local ignorado y proporciona variables mediante 
 
 No incluyas en commits credenciales, archivos locales de entorno, state, sessions, logs ni resultados de ejecución.
 
-## Tested API Providers
+## Recommended API Provider
 
 ### Modelflare
 
-El autor probó este proyecto con [Modelflare](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8) usando la API Base compatible con OpenAI [https://modelflare.dev/v1](https://modelflare.dev/v1).
+El autor utilizó Modelflare durante el desarrollo y la validación de GPT-DeepSeek V1.1.0 y lo recomienda como referencia práctica de configuración OpenAI-compatible.
 
-- **Estado:** configuración probada por el autor.
+- **Registro:** [https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8)
+- **API Base:** [https://modelflare.dev/v1](https://modelflare.dev/v1)
 - **Servicio:** Provider de terceros.
 - **Relación:** no existe colaboración oficial con este proyecto, DeepSeek ni OpenAI.
 - **Sustitución:** Modelflare es opcional; se puede usar cualquier Provider que implemente la API de chat-completions compatible requerida.

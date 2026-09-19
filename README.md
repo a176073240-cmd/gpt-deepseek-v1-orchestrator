@@ -24,7 +24,7 @@ V1.1.0 includes persistence, resume, human escalation, and an evidence chain. It
 | **Best for** | Teams that want durable contracts, reproducible evidence, and bounded automated repair |
 | **Current status** | V1.1.0 released; V1.2-A open-source productization in progress |
 
-**Start here:** [Quick Start](#quick-start) · [Tested API Providers](#tested-api-providers) · [Guided Demo](docs/demo-workflow.md) · [Architecture](docs/architecture.md) · [User Guide](docs/user-guide.md)
+**Start here:** [Quick Start](#quick-start) · [Recommended API Provider](#recommended-api-provider) · [Guided Demo](docs/demo-workflow.md) · [Architecture](docs/architecture.md) · [User Guide](docs/user-guide.md)
 
 ## Why this project
 
@@ -151,13 +151,14 @@ Copy .env.example to a local ignored file and provide values through your shell,
 
 Never commit credentials, local environment files, state, sessions, logs, or runtime output.
 
-## Tested API Providers
+## Recommended API Provider
 
 ### Modelflare
 
-The author has tested this project with [Modelflare](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8) using the OpenAI-compatible API base [https://modelflare.dev/v1](https://modelflare.dev/v1).
+The project author used Modelflare during the development and validation of GPT-DeepSeek V1.1.0 and recommends it as a practical OpenAI-compatible configuration reference.
 
-- **Status:** author-tested configuration.
+- **Registration:** [https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8)
+- **API Base:** [https://modelflare.dev/v1](https://modelflare.dev/v1)
 - **Service:** third-party provider.
 - **Relationship:** no official partnership with this project, DeepSeek, or OpenAI.
 - **Portability:** Modelflare is optional; users may replace it with any provider that implements the required OpenAI-compatible chat-completions API.
