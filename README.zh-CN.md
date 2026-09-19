@@ -97,10 +97,12 @@ V1.2 新增可选的 PySide6 Windows 图形入口，现有 CLI 与 Agent 架构�
 
 ~~~powershell
 python -m pip install -e ".[gui]"
-python launcher/main.py
+Start-GPT-DeepSeek.bat
 ~~~
 
-输入 Task、选择项目 Workspace 后点击 **开始执行**。启动器调用现有
+完成首次配置后可双击 `Start-GPT-DeepSeek.bat`，也可直接运行
+`python launcher/main.py`。输入 Task、选择项目 Workspace 后点击
+**开始执行**。启动器调用现有
 `orchestrator run` 工作流，并实时显示 Planner、Executor、Reviewer 以及
 PASS/REVISE/BLOCKED 状态。详见 [GUI Launcher 指南](docs/gui-launcher.md)。
 

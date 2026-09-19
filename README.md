@@ -141,10 +141,12 @@ CLI and Agent architecture unchanged:
 
 ~~~powershell
 python -m pip install -e ".[gui]"
-python launcher/main.py
+Start-GPT-DeepSeek.bat
 ~~~
 
-Enter a Task, select a project Workspace, and select **开始执行**. The launcher
+Double-click `Start-GPT-DeepSeek.bat` after setup, or run
+`python launcher/main.py` directly. Enter a Task, select a project Workspace,
+and select **开始执行**. The launcher
 calls the existing `orchestrator run` workflow and displays live Planner,
 Executor, Reviewer, and PASS/REVISE/BLOCKED state updates. See the
 [GUI Launcher Guide](docs/gui-launcher.md).

@@ -71,10 +71,15 @@ class OrchestratorRunner(QObject):
         self._stdout_buffer = ""
         self._stderr_buffer = ""
         self._error_reported = False
+        self._last_error = "任务未完成。请查看日志了解详情。"
 
     @property
     def is_running(self) -> bool:
         return self._process.state() != QProcess.ProcessState.NotRunning
+
+    @property
+    def last_error(self) -> str:
+        return self._last_error
 
     def start(self, goal: str, workspace: str | Path, *, fake: bool = False) -> None:
         if self.is_running:
@@ -102,6 +107,7 @@ class OrchestratorRunner(QObject):
         self._stdout_buffer = ""
         self._stderr_buffer = ""
         self._error_reported = False
+        self._last_error = "任务未完成。请查看日志了解详情。"
 
         program, arguments = build_orchestrator_command(
             goal,
@@ -143,6 +149,8 @@ class OrchestratorRunner(QObject):
             if line:
                 prefix = "[CLI]" if channel == "stdout" else "[CLI error]"
                 self.log_line.emit(f"{prefix} {line}")
+                if channel == "stderr" or line.lower().startswith("error:"):
+                    self._last_error = line.removeprefix("error:").strip() or self._last_error
         if flush and remainder:
             prefix = "[CLI]" if channel == "stdout" else "[CLI error]"
             self.log_line.emit(f"{prefix} {remainder}")
@@ -221,12 +229,14 @@ class OrchestratorRunner(QObject):
             self.log_line.emit("[Workflow] COMPLETED")
         elif phase == "BLOCKED":
             reason = str(state.get("block_reason") or "no reason supplied")
+            self._last_error = f"工作流已阻止：{reason}"
             self.log_line.emit(f"[Workflow] BLOCKED: {reason}")
 
     def _process_error(self, error: QProcess.ProcessError) -> None:
         if error == QProcess.ProcessError.Crashed:
             return
         self._error_reported = True
+        self._last_error = f"无法启动 CLI：{self._process.errorString()}"
         self.log_line.emit(f"[Launcher] Failed to start CLI: {self._process.errorString()}")
         if error == QProcess.ProcessError.FailedToStart:
             self._poll_timer.stop()
@@ -246,5 +256,6 @@ class OrchestratorRunner(QObject):
         else:
             self.status_changed.emit("Failed")
             if not self._error_reported and not phase:
+                self._last_error = f"CLI 异常退出（代码 {exit_code}）。"
                 self.log_line.emit(f"[Launcher] CLI exited with code {exit_code}")
         self.finished.emit(succeeded)
