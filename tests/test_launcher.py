@@ -14,7 +14,9 @@ from launcher.checks import (
     check_workspace,
     configuration_checks,
 )
+from launcher import runner as runner_module
 from launcher.runner import OrchestratorRunner, build_orchestrator_command
+from launcher.version import APP_VERSION, DISPLAY_NAME
 
 
 def _git_workspace(path):
@@ -51,6 +53,25 @@ def test_build_command_wraps_existing_run_cli(tmp_path):
     assert arguments[1:3] == ["run", "improve errors"]
     assert "--workspace" in arguments
     assert "--state-dir" in arguments
+
+
+def test_frozen_build_uses_bundled_cli_helper(monkeypatch, tmp_path):
+    monkeypatch.setattr(runner_module, "IS_FROZEN", True)
+    monkeypatch.setattr(runner_module, "APPLICATION_ROOT", tmp_path)
+
+    program, arguments = build_orchestrator_command(
+        "improve errors",
+        tmp_path,
+        state_dir=tmp_path / "state",
+    )
+
+    assert program == str(tmp_path / "GPT-DeepSeek-CLI.exe")
+    assert arguments[:2] == ["run", "improve errors"]
+
+
+def test_desktop_version_is_v1_2_0():
+    assert APP_VERSION == "1.2.0"
+    assert DISPLAY_NAME == "GPT-DeepSeek v1.2.0"
 
 
 def test_first_run_checks_report_missing_configuration():

@@ -24,9 +24,11 @@ from PySide6.QtWidgets import (
 try:
     from .checks import CheckResult, check_workspace, configuration_checks
     from .runner import OrchestratorRunner
+    from .version import APP_VERSION
 except ImportError:  # Direct execution through ``python launcher/main.py``.
     from checks import CheckResult, check_workspace, configuration_checks
     from runner import OrchestratorRunner
+    from version import APP_VERSION
 
 
 class LauncherWindow(QMainWindow):
@@ -34,7 +36,7 @@ class LauncherWindow(QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("GPT-DeepSeek Assistant")
+        self.setWindowTitle(f"GPT-DeepSeek Assistant — v{APP_VERSION}")
         self.resize(860, 760)
 
         self._runner = OrchestratorRunner(self)

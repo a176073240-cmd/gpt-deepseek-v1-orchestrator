@@ -136,7 +136,7 @@ python orchestrator.py run "Inspect this fixture" \
 
 ## Windows GUI Launcher
 
-V1.2 adds an optional PySide6 desktop entry point while keeping the existing
+GPT-DeepSeek v1.2.0 adds an optional PySide6 desktop entry point while keeping the existing
 CLI and Agent architecture unchanged:
 
 ~~~powershell
@@ -150,6 +150,9 @@ and select **开始执行**. The launcher
 calls the existing `orchestrator run` workflow and displays live Planner,
 Executor, Reviewer, and PASS/REVISE/BLOCKED state updates. See the
 [GUI Launcher Guide](docs/gui-launcher.md).
+
+End users can download the Windows ZIP and run `GPT-DeepSeek.exe` without
+installing Python. See [Windows Installation](docs/installation-windows.md).
 
 ## Configuration
 
@@ -260,6 +263,7 @@ This repository pins third-party source components, including DeepSeek Harness a
 
 ## Documentation
 
+- [Windows Installation](docs/installation-windows.md)
 - [GUI Launcher Guide](docs/gui-launcher.md)
 - [User Guide](docs/user-guide.md)
 - [Demo Workflow](docs/demo-workflow.md)

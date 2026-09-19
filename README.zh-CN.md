@@ -93,7 +93,7 @@ python orchestrator.py run "Inspect this fixture" --workspace /path/to/git-fixtu
 
 ## Windows GUI Launcher
 
-V1.2 新增可选的 PySide6 Windows 图形入口，现有 CLI 与 Agent 架构保持不变：
+GPT-DeepSeek v1.2.0 新增可选的 PySide6 Windows 图形入口，现有 CLI 与 Agent 架构保持不变：
 
 ~~~powershell
 python -m pip install -e ".[gui]"
@@ -105,6 +105,9 @@ Start-GPT-DeepSeek.bat
 **开始执行**。启动器调用现有
 `orchestrator run` 工作流，并实时显示 Planner、Executor、Reviewer 以及
 PASS/REVISE/BLOCKED 状态。详见 [GUI Launcher 指南](docs/gui-launcher.md)。
+
+普通用户可下载 Windows ZIP，直接运行 `GPT-DeepSeek.exe`，无需安装
+Python。详见 [Windows 安装说明](docs/installation-windows.md)。
 
 ## Configuration
 
@@ -193,4 +196,4 @@ Apache-2.0 第 3 节由各 Contributor 就其有权许可、且其 Contribution 
 
 ## Documentation
 
-[GUI Launcher 指南](docs/gui-launcher.md) · [User Guide](docs/user-guide.md) · [Demo Workflow](docs/demo-workflow.md) · [Architecture](docs/architecture.md) · [Providers](docs/providers.md) · [Provider Setup](docs/provider-setup.md) · [Third-party Attribution](docs/third-party.md) · [Contributing](CONTRIBUTING.md)
+[Windows 安装说明](docs/installation-windows.md) · [GUI Launcher 指南](docs/gui-launcher.md) · [User Guide](docs/user-guide.md) · [Demo Workflow](docs/demo-workflow.md) · [Architecture](docs/architecture.md) · [Providers](docs/providers.md) · [Provider Setup](docs/provider-setup.md) · [Third-party Attribution](docs/third-party.md) · [Contributing](CONTRIBUTING.md)

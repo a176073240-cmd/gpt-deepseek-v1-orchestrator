@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -9,6 +10,16 @@ from PySide6.QtCore import QObject, QProcess, QTimer, Signal
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+IS_FROZEN = bool(getattr(sys, "frozen", False))
+APPLICATION_ROOT = Path(sys.executable).resolve().parent if IS_FROZEN else PROJECT_ROOT
+
+
+def default_state_dir() -> Path:
+    if not IS_FROZEN:
+        return PROJECT_ROOT / ".orchestrator"
+    local_app_data = os.getenv("LOCALAPPDATA")
+    base = Path(local_app_data) if local_app_data else APPLICATION_ROOT
+    return base / "GPT-DeepSeek" / "state"
 
 
 def build_orchestrator_command(
@@ -19,8 +30,7 @@ def build_orchestrator_command(
     fake: bool = False,
 ) -> tuple[str, list[str]]:
     """Build the source-checkout equivalent of ``orchestrator run``."""
-    arguments = [
-        str(PROJECT_ROOT / "orchestrator.py"),
+    cli_arguments = [
         "run",
         goal,
         "--workspace",
@@ -29,8 +39,10 @@ def build_orchestrator_command(
         str(Path(state_dir).resolve()),
     ]
     if fake:
-        arguments.append("--fake")
-    return sys.executable, arguments
+        cli_arguments.append("--fake")
+    if IS_FROZEN:
+        return str(APPLICATION_ROOT / "GPT-DeepSeek-CLI.exe"), cli_arguments
+    return sys.executable, [str(PROJECT_ROOT / "orchestrator.py"), *cli_arguments]
 
 
 class OrchestratorRunner(QObject):
@@ -48,7 +60,7 @@ class OrchestratorRunner(QObject):
     ) -> None:
         super().__init__(parent)
         self._process = QProcess(self)
-        self._process.setWorkingDirectory(str(PROJECT_ROOT))
+        self._process.setWorkingDirectory(str(APPLICATION_ROOT))
         self._process.setProcessChannelMode(QProcess.ProcessChannelMode.SeparateChannels)
         self._process.readyReadStandardOutput.connect(self._read_stdout)
         self._process.readyReadStandardError.connect(self._read_stderr)
@@ -59,7 +71,7 @@ class OrchestratorRunner(QObject):
         self._poll_timer.setInterval(300)
         self._poll_timer.timeout.connect(self._poll_state)
 
-        self._state_dir = Path(state_dir).resolve() if state_dir else PROJECT_ROOT / ".orchestrator"
+        self._state_dir = Path(state_dir).resolve() if state_dir else default_state_dir()
         self._known_state_files: set[str] = set()
         self._task_file: Path | None = None
         self._last_signature: tuple[object, ...] | None = None
