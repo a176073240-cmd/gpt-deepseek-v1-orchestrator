@@ -2,11 +2,27 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Español](README.es.md)
 
+[![Release](https://img.shields.io/badge/release-v1.1.0-2563eb)](https://github.com/a176073240-cmd/gpt-deepseek-v1-orchestrator/releases/tag/v1.1.0)
+[![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776ab?logo=python&logoColor=white)](pyproject.toml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
+[![Executor](https://img.shields.io/badge/executor-DeepSeek%20Harness-5b21b6)](https://github.com/deepseek-ai/deepseek-harness)
+
 > A durable coding workflow that combines GPT planning and review with DeepSeek Harness execution.
 
 GPT-DeepSeek V1 Orchestrator turns a natural-language engineering goal into a structured, reviewable workflow for an existing Git repository. A GPT-compatible model plans the task, DeepSeek Harness performs the work, deterministic checks collect evidence, and a GPT-compatible reviewer returns PASS, REVISE, or BLOCKED.
 
 V1.1.0 includes persistence, resume, human escalation, and an evidence chain. It intentionally keeps the V1 planner → executor → reviewer architecture and does not introduce model routing, multi-agent scheduling, or a web UI.
+
+## At a glance
+
+| | |
+| --- | --- |
+| **Positioning** | A small, auditable orchestration layer for agent-assisted changes to existing Git repositories |
+| **Workflow** | Plan → Execute → Validate → Review → Revise or resume |
+| **Best for** | Teams that want durable contracts, reproducible evidence, and bounded automated repair |
+| **Current status** | V1.1.0 released; V1.2-A open-source productization in progress |
+
+**Start here:** [Quick Start](#quick-start) · [Guided Demo](docs/demo-workflow.md) · [Architecture](docs/architecture.md) · [User Guide](docs/user-guide.md) · [Providers](docs/providers.md)
 
 ## Why this project
 
@@ -92,7 +108,9 @@ Follow the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) i
 
 ## Quick Start
 
-Run an offline smoke test first. It needs no provider credentials or live dsh process:
+### 30-second offline demo
+
+Run the deterministic offline workflow first. It needs no provider credentials or live dsh process and lets you verify the full orchestration path before configuring a provider:
 
 ~~~bash
 orchestrator run "Inspect this fixture" \
@@ -100,6 +118,10 @@ orchestrator run "Inspect this fixture" \
   --fake \
   --json
 ~~~
+
+Use any disposable Git repository for the workspace path. A successful run returns JSON with a completed phase, the generated task contract, validation evidence, and the reviewer verdict.
+
+For a narrated real-provider flow, follow the [Guided Demo](docs/demo-workflow.md).
 
 Without an installed package, use the repository shim:
 

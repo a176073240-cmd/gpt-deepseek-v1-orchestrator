@@ -1,0 +1,65 @@
+name: Feature request
+description: Propose a focused improvement to GPT-DeepSeek V1 Orchestrator
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the user problem before the implementation. Large architecture changes should explain why the existing V1 workflow cannot address the need.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-flight checks
+      options:
+        - label: I searched existing issues and the roadmap for a similar request.
+          required: true
+        - label: This request does not include credentials or private repository data.
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: What limitation or workflow problem should be solved?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe observable behavior and success criteria without prescribing an implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use case
+      description: Give a concrete example showing who benefits and how.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Planner
+        - DeepSeek Harness executor
+        - Reviewer and revision loop
+        - Persistence and resume
+        - Evidence and validation
+        - CLI and configuration
+        - Documentation and open-source presentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What existing workflow or workaround have you tried?
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility and risks
+      description: Note any effect on V1 behavior, saved state, providers, security boundaries, or existing users.
