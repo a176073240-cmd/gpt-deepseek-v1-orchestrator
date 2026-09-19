@@ -1,4 +1,4 @@
-# Windows Installation — GPT-DeepSeek v1.2.0
+# Windows Installation — GPT-DeepSeek v1.2.1
 
 The Windows desktop package includes Python, PySide6, and the GPT-DeepSeek
 orchestrator. End users do not need to install Python.
@@ -7,7 +7,7 @@ orchestrator. End users do not need to install Python.
 
 ### 1. 下载
 
-从项目的 GitHub Releases 页面下载 GPT-DeepSeek v1.2.0 Windows ZIP 包。
+从项目的 GitHub Releases 页面下载 GPT-DeepSeek v1.2.1 Windows ZIP 包。
 
 ### 2. 解压
 
@@ -103,3 +103,4 @@ API Key 仍从 Windows 环境变量读取，不会写入状态目录。
 
 源码构建步骤见 [Windows packaging](../packaging/README.md)。构建产生的
 `build/` 和 `dist/` 仅用于本地验证，不提交到 Git。
+

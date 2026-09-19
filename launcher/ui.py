@@ -1,12 +1,16 @@
 """Qt widgets for the Windows launcher."""
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
     QFileDialog,
+    QFormLayout,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
@@ -23,12 +27,48 @@ from PySide6.QtWidgets import (
 
 try:
     from .checks import CheckResult, check_workspace, configuration_checks
-    from .runner import OrchestratorRunner
+    from .demo import run_demo_task
+    from .envfile import CONFIG_KEYS, environment_file_path, load_environment, save_environment
+    from .runner import APPLICATION_ROOT, OrchestratorRunner
     from .version import APP_VERSION
+    from .wizard import FirstRunWizard
 except ImportError:  # Direct execution through ``python launcher/main.py``.
     from checks import CheckResult, check_workspace, configuration_checks
-    from runner import OrchestratorRunner
+    from demo import run_demo_task
+    from envfile import CONFIG_KEYS, environment_file_path, load_environment, save_environment
+    from runner import APPLICATION_ROOT, OrchestratorRunner
     from version import APP_VERSION
+    from wizard import FirstRunWizard
+
+
+class SettingsDialog(QDialog):
+    """Edit supported provider values and save them to a local .env file."""
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Settings — API 配置")
+        self.setMinimumWidth(560)
+        form = QFormLayout()
+        self.fields: dict[str, QLineEdit] = {}
+        for key in CONFIG_KEYS:
+            field = QLineEdit(os.getenv(key, ""))
+            if key.endswith("_KEY"):
+                field.setEchoMode(QLineEdit.EchoMode.Password)
+            self.fields[key] = field
+            form.addRow(QLabel(key), field)
+        note = QLabel(f"保存位置：{environment_file_path()}\n.env 已被 Git 忽略，请勿提交。")
+        note.setWordWrap(True)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(self._save)
+        buttons.rejected.connect(self.reject)
+        layout = QVBoxLayout(self)
+        layout.addWidget(note)
+        layout.addLayout(form)
+        layout.addWidget(buttons)
+
+    def _save(self) -> None:
+        save_environment({key: field.text() for key, field in self.fields.items()})
+        self.accept()
 
 
 class LauncherWindow(QMainWindow):
@@ -36,8 +76,9 @@ class LauncherWindow(QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
+        load_environment()
         self.setWindowTitle(f"GPT-DeepSeek Assistant — v{APP_VERSION}")
-        self.resize(860, 760)
+        self.resize(900, 780)
 
         self._runner = OrchestratorRunner(self)
         self._runner.log_line.connect(self._append_log)
@@ -51,8 +92,7 @@ class LauncherWindow(QMainWindow):
         self.configuration_summary = QLabel()
         self.configuration_labels: dict[str, QLabel] = {}
         for row, (key, title) in enumerate(
-            (("python", "Python 环境"), ("api", "GPT API"), ("harness", "DeepSeek Harness")),
-            start=1,
+            (("python", "Python 环境"), ("api", "GPT API"), ("harness", "Harness")), start=1
         ):
             configuration_layout.addWidget(QLabel(f"{title}:"), row, 0)
             value = QLabel("检查中…")
@@ -61,8 +101,14 @@ class LauncherWindow(QMainWindow):
             configuration_layout.addWidget(value, row, 1)
         self.refresh_button = QPushButton("重新检查配置")
         self.refresh_button.clicked.connect(self._refresh_configuration)
+        self.settings_button = QPushButton("Settings")
+        self.settings_button.clicked.connect(self._open_settings)
+        self.wizard_button = QPushButton("First Run Wizard")
+        self.wizard_button.clicked.connect(self._open_wizard)
         configuration_layout.addWidget(self.configuration_summary, 0, 0, 1, 2)
-        configuration_layout.addWidget(self.refresh_button, 4, 1, Qt.AlignmentFlag.AlignRight)
+        configuration_layout.addWidget(self.settings_button, 4, 0, Qt.AlignmentFlag.AlignLeft)
+        configuration_layout.addWidget(self.wizard_button, 4, 1, Qt.AlignmentFlag.AlignRight)
+        configuration_layout.addWidget(self.refresh_button, 5, 1, Qt.AlignmentFlag.AlignRight)
         self.configuration_group.setLayout(configuration_layout)
 
         self.task_input = QTextEdit()
@@ -80,12 +126,14 @@ class LauncherWindow(QMainWindow):
         self.start_button = QPushButton("开始执行")
         self.start_button.setMinimumHeight(38)
         self.start_button.clicked.connect(self._start)
+        self.demo_button = QPushButton("Run Demo")
+        self.demo_button.setMinimumHeight(38)
+        self.demo_button.clicked.connect(self._run_demo)
 
         self.status_label = QLabel("Ready")
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.status_label.setMinimumWidth(110)
         self.status_label.setStyleSheet(self._status_style("Ready"))
-
         self.log_output = QPlainTextEdit()
         self.log_output.setReadOnly(True)
         self.log_output.setPlaceholderText("Planner, Executor, Reviewer, and verdict updates appear here.")
@@ -93,12 +141,11 @@ class LauncherWindow(QMainWindow):
         workspace_row = QHBoxLayout()
         workspace_row.addWidget(self.workspace_input, 1)
         workspace_row.addWidget(self.workspace_button)
-
         action_row = QHBoxLayout()
         action_row.addWidget(self.start_button, 1)
+        action_row.addWidget(self.demo_button)
         action_row.addWidget(QLabel("Status:"))
         action_row.addWidget(self.status_label)
-
         layout = QVBoxLayout()
         layout.addWidget(self.configuration_group)
         layout.addWidget(QLabel("Task"))
@@ -109,12 +156,36 @@ class LauncherWindow(QMainWindow):
         layout.addLayout(action_row)
         layout.addWidget(QLabel("Logs"))
         layout.addWidget(self.log_output, 1)
-
         central = QWidget()
         central.setLayout(layout)
         self.setCentralWidget(central)
         self._refresh_configuration()
         self._update_workspace_status()
+        QTimer.singleShot(0, self._maybe_show_first_run_wizard)
+
+    def _maybe_show_first_run_wizard(self) -> None:
+        if not FirstRunWizard.is_complete():
+            self._open_wizard()
+
+    def _open_wizard(self) -> None:
+        wizard = FirstRunWizard(self)
+        wizard.finished.connect(self._refresh_configuration)
+        wizard.exec()
+
+    def _open_settings(self) -> None:
+        dialog = SettingsDialog(self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            load_environment(overwrite=True)
+            self._refresh_configuration()
+
+    def _run_demo(self) -> None:
+        result = run_demo_task(self._runner._state_dir)
+        self._append_log("[Demo] " + result.message)
+        self._set_status("Completed" if result.ok else "Failed")
+        if result.ok:
+            QMessageBox.information(self, "Run Demo", result.message)
+        else:
+            QMessageBox.warning(self, "Run Demo", result.message)
 
     def _choose_workspace(self) -> None:
         start = self.workspace_input.text() or str(Path.cwd())
@@ -139,34 +210,31 @@ class LauncherWindow(QMainWindow):
                 if issue.remediation:
                     line += f"\n  {issue.remediation}"
                 details.append(line)
-            QMessageBox.warning(
-                self,
-                "暂时无法开始",
-                "请先完成以下设置：\n\n" + "\n".join(details),
-            )
+            QMessageBox.warning(self, "暂时无法开始", "请先完成以下设置：\n\n" + "\n".join(details))
             return
         try:
             self._runner.start(task, self.workspace_input.text())
         except (ValueError, RuntimeError) as exc:
             QMessageBox.warning(self, "暂时无法开始", f"启动失败：{exc}\n\n请检查配置和日志后重试。")
             return
-        self.start_button.setEnabled(False)
-        self.workspace_button.setEnabled(False)
-        self.refresh_button.setEnabled(False)
+        for widget in (self.start_button, self.demo_button, self.workspace_button, self.refresh_button, self.settings_button):
+            widget.setEnabled(False)
         self.task_input.setEnabled(False)
 
     def _refresh_configuration(self) -> None:
-        self._configuration_results = configuration_checks()
+        self._configuration_results = configuration_checks(application_root=APPLICATION_ROOT)
         ready = all(result.ok for result in self._configuration_results)
-        self.configuration_summary.setText(
-            "配置已就绪，可以开始任务。" if ready else "配置尚未完成，请处理下面标红的项目。"
-        )
-        self.configuration_summary.setStyleSheet(
-            "color: #166534; font-weight: 600;" if ready else "color: #991b1b; font-weight: 600;"
-        )
+        self.configuration_summary.setText("配置已就绪，可以开始任务。" if ready else "配置尚未完成，请处理下面标红的项目。")
+        self.configuration_summary.setStyleSheet("color: #166534; font-weight: 600;" if ready else "color: #991b1b; font-weight: 600;")
         for result in self._configuration_results:
             label = self.configuration_labels[result.key]
-            label.setText(("可用 — " if result.ok else "需要设置 — ") + result.message)
+            if result.key == "harness":
+                text = ("✓ Available — " if result.ok else "✗ Missing — ") + result.message
+                if not result.ok and result.remediation:
+                    text += f"\n解决方法：{result.remediation}"
+            else:
+                text = ("可用 — " if result.ok else "需要设置 — ") + result.message
+            label.setText(text)
             label.setStyleSheet("color: #166534;" if result.ok else "color: #991b1b;")
             label.setToolTip(result.remediation or result.message)
 
@@ -187,42 +255,28 @@ class LauncherWindow(QMainWindow):
         self.status_label.setStyleSheet(self._status_style(status))
 
     def _run_finished(self, succeeded: bool) -> None:
-        self.start_button.setEnabled(True)
-        self.workspace_button.setEnabled(True)
-        self.refresh_button.setEnabled(True)
+        for widget in (self.start_button, self.demo_button, self.workspace_button, self.refresh_button, self.settings_button):
+            widget.setEnabled(True)
         self.task_input.setEnabled(True)
         if not succeeded and not self._closing:
-            QMessageBox.warning(
-                self,
-                "任务执行失败",
-                f"{self._runner.last_error}\n\n请查看日志中的详细信息，修正配置后重试。",
-            )
+            QMessageBox.warning(self, "任务执行失败", f"{self._runner.last_error}\n\n请查看日志中的详细信息，修正配置后重试。")
 
     @staticmethod
     def _status_style(status: str) -> str:
-        colors = {
-            "Running": ("#fff7d6", "#7a5b00"),
-            "Completed": ("#dcfce7", "#166534"),
-            "Failed": ("#fee2e2", "#991b1b"),
-        }
+        colors = {"Running": ("#fff7d6", "#7a5b00"), "Completed": ("#dcfce7", "#166534"), "Failed": ("#fee2e2", "#991b1b")}
         background, foreground = colors.get(status, ("#e5e7eb", "#374151"))
-        return (
-            f"background: {background}; color: {foreground}; "
-            "border-radius: 5px; padding: 6px 10px; font-weight: 600;"
-        )
+        return f"background: {background}; color: {foreground}; border-radius: 5px; padding: 6px 10px; font-weight: 600;"
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802 - Qt API name
         if not self._runner.is_running:
             event.accept()
             return
-        choice = QMessageBox.question(
-            self,
-            "Task is running",
-            "Stop the CLI process and close the launcher? The saved task can be resumed later.",
-        )
+        choice = QMessageBox.question(self, "Task is running", "Stop the CLI process and close the launcher? The saved task can be resumed later.")
         if choice == QMessageBox.StandardButton.Yes:
             self._closing = True
             self._runner.stop()
             event.accept()
         else:
             event.ignore()
+
+

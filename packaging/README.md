@@ -1,7 +1,7 @@
 # Windows packaging
 
 This directory contains the reproducible PyInstaller configuration for
-GPT-DeepSeek v1.2.0.
+GPT-DeepSeek v1.2.1.
 
 ## Build
 
@@ -30,10 +30,10 @@ dist/GPT-DeepSeek/
 ├── LICENSE
 └── _internal/
 
-dist/GPT-DeepSeek-v1.2.0-windows-x64.zip
+dist/GPT-DeepSeek-v1.2.1-windows-x64.zip
 ~~~
 
-Distribute `GPT-DeepSeek-v1.2.0-windows-x64.zip`. The helper CLI executable is
+Distribute `GPT-DeepSeek-v1.2.1-windows-x64.zip`. The helper CLI executable is
 launched by the GUI and must remain beside `GPT-DeepSeek.exe` after extraction.
 
 `build/` and `dist/` are ignored and must not be committed. Do not place API
@@ -41,7 +41,7 @@ keys, `.env`, or other credentials in the package.
 
 ## Verify
 
-1. Check that `GPT-DeepSeek.exe` has Product Version `1.2.0` in Windows file
+1. Check that `GPT-DeepSeek.exe` has Product Version `1.2.1` in Windows file
    properties.
 2. Launch `dist/GPT-DeepSeek/GPT-DeepSeek.exe` and confirm the configuration
    panel is visible.
@@ -50,3 +50,4 @@ keys, `.env`, or other credentials in the package.
 
 The package embeds Python and PySide6. DeepSeek Harness remains an external
 executor and `dsh` must be available on the user's `PATH`.
+

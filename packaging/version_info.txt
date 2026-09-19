@@ -16,15 +16,16 @@ VSVersionInfo(
         [
           StringStruct('CompanyName', 'GPT-DeepSeek Contributors'),
           StringStruct('FileDescription', 'GPT-DeepSeek Windows Desktop Launcher'),
-          StringStruct('FileVersion', '1.2.0'),
+          StringStruct('FileVersion', '1.2.1'),
           StringStruct('InternalName', 'GPT-DeepSeek'),
           StringStruct('LegalCopyright', 'Copyright 2026 GPT-DeepSeek Contributors'),
           StringStruct('OriginalFilename', 'GPT-DeepSeek.exe'),
           StringStruct('ProductName', 'GPT-DeepSeek'),
-          StringStruct('ProductVersion', '1.2.0')
+          StringStruct('ProductVersion', '1.2.1')
         ]
       )
     ]),
     VarFileInfo([VarStruct('Translation', [1033, 1200])])
   ]
 )
+

@@ -10,11 +10,14 @@ version_file = project_root / "packaging" / "version_info.txt"
 common_paths = [str(project_root), str(source_root)]
 core_hidden_imports = collect_submodules("v1_orchestrator")
 
+bundled_harness_dir = project_root / "packaging" / "bundled-harness"
+bundled_datas = [(str(bundled_harness_dir), "harness")] if bundled_harness_dir.is_dir() else []
+
 gui_analysis = Analysis(
     [str(project_root / "launcher" / "main.py")],
     pathex=common_paths,
     binaries=[],
-    datas=[],
+    datas=bundled_datas,
     hiddenimports=core_hidden_imports,
     hookspath=[],
     hooksconfig={},
@@ -47,7 +50,7 @@ cli_analysis = Analysis(
     [str(project_root / "packaging" / "cli_entry.py")],
     pathex=common_paths,
     binaries=[],
-    datas=[],
+    datas=bundled_datas,
     hiddenimports=core_hidden_imports,
     hookspath=[],
     hooksconfig={},
@@ -87,3 +90,5 @@ distribution = COLLECT(
     upx_exclude=[],
     name="GPT-DeepSeek",
 )
+
+

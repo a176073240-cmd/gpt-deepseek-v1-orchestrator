@@ -6,7 +6,12 @@ import os
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QProcess, QTimer, Signal
+from PySide6.QtCore import QObject, QProcess, QProcessEnvironment, QTimer, Signal
+
+try:
+    from .harness import resolve_harness
+except ImportError:
+    from harness import resolve_harness
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -131,6 +136,16 @@ class OrchestratorRunner(QObject):
         self.log_line.emit("[Launcher] Starting orchestrator run")
         self.log_line.emit("[Planner] Waiting for PLANNING state")
         self._poll_timer.start()
+        # Make bundled/configured dsh discoverable to the unchanged CLI.
+        resolution = resolve_harness(application_root=APPLICATION_ROOT)
+        process_environment = QProcessEnvironment.systemEnvironment()
+        if resolution.path:
+            path_entries = [str(resolution.path.parent)]
+            current_path = process_environment.value("PATH")
+            if current_path:
+                path_entries.append(current_path)
+            process_environment.insert("PATH", os.pathsep.join(path_entries))
+        self._process.setProcessEnvironment(process_environment)
         self._process.start(program, arguments)
 
     def stop(self) -> None:
@@ -271,3 +286,7 @@ class OrchestratorRunner(QObject):
                 self._last_error = f"CLI 异常退出（代码 {exit_code}）。"
                 self.log_line.emit(f"[Launcher] CLI exited with code {exit_code}")
         self.finished.emit(succeeded)
+
+
+
+

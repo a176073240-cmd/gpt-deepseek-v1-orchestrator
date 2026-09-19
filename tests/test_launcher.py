@@ -69,9 +69,9 @@ def test_frozen_build_uses_bundled_cli_helper(monkeypatch, tmp_path):
     assert arguments[:2] == ["run", "improve errors"]
 
 
-def test_desktop_version_is_v1_2_0():
-    assert APP_VERSION == "1.2.0"
-    assert DISPLAY_NAME == "GPT-DeepSeek v1.2.0"
+def test_desktop_version_is_v1_2_1():
+    assert APP_VERSION == "1.2.1"
+    assert DISPLAY_NAME == "GPT-DeepSeek v1.2.1"
 
 
 def test_first_run_checks_report_missing_configuration():
@@ -130,3 +130,4 @@ def test_runner_invokes_cli_and_reports_completed(tmp_path):
     assert any("[Planner]" in line for line in logs)
     assert any("[Executor]" in line for line in logs)
     assert any("[Reviewer] PASS" in line for line in logs)
+

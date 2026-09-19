@@ -11,6 +11,13 @@ from typing import Callable, Mapping
 
 from PySide6 import __version__ as PYSIDE_VERSION
 
+try:
+    from .envfile import load_environment
+    from .harness import resolve_harness
+except ImportError:  # Direct execution through ``python launcher/main.py``.
+    from envfile import load_environment
+    from harness import resolve_harness
+
 
 @dataclass(frozen=True)
 class CheckResult:
@@ -36,7 +43,9 @@ def check_python_environment() -> CheckResult:
 
 
 def check_api_configuration(environment: Mapping[str, str] | None = None) -> CheckResult:
-    environment = os.environ if environment is None else environment
+    if environment is None:
+        load_environment()
+        environment = os.environ
     requirements = (
         ("GPT_API_KEY", ("GPT_API_KEY", "GPT_KEY")),
         ("GPT_API_BASE", ("GPT_API_BASE", "GPT_BASE")),
@@ -49,44 +58,42 @@ def check_api_configuration(environment: Mapping[str, str] | None = None) -> Che
             "GPT API",
             False,
             "不可用：缺少 " + ", ".join(missing),
-            "请设置 GPT_API_KEY、GPT_API_BASE 和 GPT_MODEL，然后重启启动器。",
+            "请在 Settings 中填写 GPT_API_KEY、GPT_API_BASE 和 GPT_MODEL。",
         )
-    return CheckResult(
-        "api",
-        "GPT API",
-        True,
-        "配置已就绪（实际连接将在执行任务时验证）",
-    )
+    return CheckResult("api", "GPT API", True, "配置已就绪（实际连接将在执行任务时验证）")
 
 
 def check_harness_configuration(
     environment: Mapping[str, str] | None = None,
     *,
     which: Callable[[str], str | None] = shutil.which,
+    application_root: Path | None = None,
 ) -> CheckResult:
-    environment = os.environ if environment is None else environment
+    if environment is None:
+        load_environment()
+        environment = os.environ
     requirements = (
         ("DEEPSEEK_API_KEY", ("DEEPSEEK_API_KEY",)),
         ("DEEPSEEK_API_BASE", ("DEEPSEEK_API_BASE", "DEEPSEEK_BASE_URL")),
         ("DEEPSEEK_MODEL", ("DEEPSEEK_MODEL",)),
     )
     missing = [display for display, aliases in requirements if not _configured(environment, *aliases)]
-    executable = which("dsh")
-    if not executable:
-        missing.append("dsh (PATH)")
+    resolution = resolve_harness(environment, application_root=application_root, which=which)
+    if not resolution.available:
+        missing.append("dsh (PATH); bundled/configured checked")
     if missing:
         return CheckResult(
             "harness",
             "DeepSeek Harness",
             False,
             "不可用：缺少 " + ", ".join(missing),
-            "请配置 DeepSeek 环境变量，并确保 dsh 命令已加入 PATH。",
+            "请配置 DeepSeek 环境变量，并安装 dsh，或在 Settings 中填写 Harness 的完整路径。",
         )
     return CheckResult(
         "harness",
         "DeepSeek Harness",
         True,
-        f"配置已就绪：{executable}",
+        f"配置已就绪：{resolution.path}（{resolution.source}）",
     )
 
 
@@ -94,11 +101,15 @@ def configuration_checks(
     environment: Mapping[str, str] | None = None,
     *,
     which: Callable[[str], str | None] = shutil.which,
+    application_root: Path | None = None
 ) -> tuple[CheckResult, ...]:
+    if environment is None:
+        load_environment()
+        environment = os.environ
     return (
         check_python_environment(),
         check_api_configuration(environment),
-        check_harness_configuration(environment, which=which),
+        check_harness_configuration(environment, which=which, application_root=application_root),
     )
 
 
@@ -112,48 +123,24 @@ def check_workspace(
         return CheckResult("workspace", "Workspace", False, "尚未选择项目目录")
     path = Path(value).expanduser().resolve()
     if not path.is_dir():
-        return CheckResult(
-            "workspace",
-            "Workspace",
-            False,
-            "无效：目录不存在",
-            "请选择一个已有的项目目录。",
-        )
+        return CheckResult("workspace", "Workspace", False, "无效：目录不存在", "请选择一个已有的项目目录。")
     if not (path / ".git").exists():
-        return CheckResult(
-            "workspace",
-            "Workspace",
-            False,
-            "无效：不是 Git 仓库",
-            "请选择包含 .git 的项目目录。",
-        )
+        return CheckResult("workspace", "Workspace", False, "无效：不是 Git 仓库", "请选择包含 .git 的项目目录。")
     git = which("git")
     if not git:
-        return CheckResult(
-            "workspace",
-            "Workspace",
-            False,
-            "无效：未找到 Git",
-            "请安装 Git for Windows 并重启启动器。",
-        )
+        return CheckResult("workspace", "Workspace", False, "无效：未找到 Git", "请安装 Git for Windows 并重启启动器。")
     creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
     try:
         result = subprocess.run(
             [git, "-C", str(path), "rev-parse", "--is-inside-work-tree"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-            check=False,
-            creationflags=creationflags,
+            capture_output=True, text=True, timeout=5, check=False, creationflags=creationflags,
         )
     except (OSError, subprocess.TimeoutExpired):
         result = None
     if result is None or result.returncode != 0 or result.stdout.strip() != "true":
-        return CheckResult(
-            "workspace",
-            "Workspace",
-            False,
-            "无效：Git 无法读取该仓库",
-            "请检查目录权限和 Git 仓库状态。",
-        )
+        return CheckResult("workspace", "Workspace", False, "无效：Git 无法读取该仓库", "请检查目录权限和 Git 仓库状态。")
     return CheckResult("workspace", "Workspace", True, f"有效 Git 仓库：{path}")
+
+
+
+

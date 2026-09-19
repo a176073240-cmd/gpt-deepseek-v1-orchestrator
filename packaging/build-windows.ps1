@@ -65,10 +65,11 @@ if (-not (Test-Path -LiteralPath $desktopExecutable)) {
 $distributionDirectory = Split-Path -Parent $desktopExecutable
 Copy-Item -LiteralPath (Join-Path $projectDirectory "docs\installation-windows.md") -Destination (Join-Path $distributionDirectory "README-Windows.md") -Force
 Copy-Item -LiteralPath (Join-Path $projectDirectory "LICENSE") -Destination (Join-Path $distributionDirectory "LICENSE") -Force
-$archivePath = Join-Path $projectDirectory "dist\GPT-DeepSeek-v1.2.0-windows-x64.zip"
+$archivePath = Join-Path $projectDirectory "dist\GPT-DeepSeek-v1.2.1-windows-x64.zip"
 Compress-Archive -Path (Join-Path $distributionDirectory "*") -DestinationPath $archivePath -CompressionLevel Optimal -Force
 
 Write-Host ""
-Write-Host "GPT-DeepSeek v1.2.0 Windows package created:" -ForegroundColor Green
+Write-Host "GPT-DeepSeek v1.2.1 Windows package created:" -ForegroundColor Green
 Write-Host $desktopExecutable
 Write-Host $archivePath
+
