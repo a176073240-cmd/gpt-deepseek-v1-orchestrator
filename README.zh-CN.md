@@ -91,6 +91,19 @@ orchestrator run "Inspect this fixture" --workspace /path/to/git-fixture --fake 
 python orchestrator.py run "Inspect this fixture" --workspace /path/to/git-fixture --fake --json
 ~~~
 
+## Windows GUI Launcher
+
+V1.2 新增可选的 PySide6 Windows 图形入口，现有 CLI 与 Agent 架构保持不变：
+
+~~~powershell
+python -m pip install -e ".[gui]"
+python launcher/main.py
+~~~
+
+输入 Task、选择项目 Workspace 后点击 **开始执行**。启动器调用现有
+`orchestrator run` 工作流，并实时显示 Planner、Executor、Reviewer 以及
+PASS/REVISE/BLOCKED 状态。详见 [GUI Launcher 指南](docs/gui-launcher.md)。
+
 ## Configuration
 
 将 .env.example 复制为本地忽略文件，通过 shell、秘密管理器或 dotenv 工具提供变量。CLI 不会自动加载 .env。
@@ -152,7 +165,7 @@ orchestrator answer TASK_ID "Keep the existing format." \
 
 ~~~bash
 python -m pytest
-python -m compileall -q src orchestrator.py
+python -m compileall -q src launcher orchestrator.py
 ~~~
 
 测试使用临时 Git fixture，不需要实时 Provider。V1.1 验证资产位于 [validation/](validation/)。
@@ -160,6 +173,7 @@ python -m compileall -q src orchestrator.py
 ## Roadmap
 
 - **V1.1.0 — 已发布：** Planner、Executor、Reviewer 循环、恢复、证据链、指南、演示与验证归档。
+- **V1.2 GUI Launcher MVP：** 可选的 PySide6 Windows 图形入口，封装现有 CLI。
 - **V1.2-A — 进行中：** 多语言 README、Provider 文档、第三方声明、许可证说明和 GitHub 展示。
 - **未来候选：** 打包优化、更多 Provider 示例、CI/发布自动化和可选可观测性；这些不是当前功能。
 
@@ -177,4 +191,4 @@ Apache-2.0 第 3 节由各 Contributor 就其有权许可、且其 Contribution 
 
 ## Documentation
 
-[User Guide](docs/user-guide.md) · [Demo Workflow](docs/demo-workflow.md) · [Architecture](docs/architecture.md) · [Providers](docs/providers.md) · [Provider Setup](docs/provider-setup.md) · [Third-party Attribution](docs/third-party.md) · [Contributing](CONTRIBUTING.md)
+[GUI Launcher 指南](docs/gui-launcher.md) · [User Guide](docs/user-guide.md) · [Demo Workflow](docs/demo-workflow.md) · [Architecture](docs/architecture.md) · [Providers](docs/providers.md) · [Provider Setup](docs/provider-setup.md) · [Third-party Attribution](docs/third-party.md) · [Contributing](CONTRIBUTING.md)

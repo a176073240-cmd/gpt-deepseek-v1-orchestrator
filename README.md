@@ -24,7 +24,7 @@ V1.1.0 includes persistence, resume, human escalation, and an evidence chain. It
 | **Best for** | Teams that want durable contracts, reproducible evidence, and bounded automated repair |
 | **Current status** | V1.1.0 released; V1.2-A open-source productization in progress |
 
-**Start here:** [Quick Start](#quick-start) · [Author's Recommended API Setup](#authors-recommended-api-setup) · [Guided Demo](docs/demo-workflow.md) · [Architecture](docs/architecture.md) · [User Guide](docs/user-guide.md)
+**Start here:** [Quick Start](#quick-start) · [GUI Launcher](#windows-gui-launcher) · [Author's Recommended API Setup](#authors-recommended-api-setup) · [Guided Demo](docs/demo-workflow.md) · [Architecture](docs/architecture.md) · [User Guide](docs/user-guide.md)
 
 ## Why this project
 
@@ -134,6 +134,21 @@ python orchestrator.py run "Inspect this fixture" \
   --json
 ~~~
 
+## Windows GUI Launcher
+
+V1.2 adds an optional PySide6 desktop entry point while keeping the existing
+CLI and Agent architecture unchanged:
+
+~~~powershell
+python -m pip install -e ".[gui]"
+python launcher/main.py
+~~~
+
+Enter a Task, select a project Workspace, and select **开始执行**. The launcher
+calls the existing `orchestrator run` workflow and displays live Planner,
+Executor, Reviewer, and PASS/REVISE/BLOCKED state updates. See the
+[GUI Launcher Guide](docs/gui-launcher.md).
+
 ## Configuration
 
 Copy .env.example to a local ignored file and provide values through your shell, secret manager, or dotenv tool. The CLI reads environment variables but does not load .env automatically.
@@ -217,7 +232,7 @@ See the [User Guide](docs/user-guide.md) and [Demo Workflow](docs/demo-workflow.
 
 ~~~bash
 python -m pytest
-python -m compileall -q src orchestrator.py
+python -m compileall -q src launcher orchestrator.py
 ~~~
 
 Tests use temporary Git fixtures and do not require live providers. Archived V1.1 validation assets are under [validation/](validation/).
@@ -225,6 +240,7 @@ Tests use temporary Git fixtures and do not require live providers. Archived V1.
 ## Roadmap
 
 - **V1.1.0 — released:** planner, executor, reviewer loop, resume, evidence chain, guides, demo, and validation archive.
+- **V1.2 GUI Launcher MVP:** optional PySide6 Windows entry point wrapping the existing CLI.
 - **V1.2-A — in progress:** localization, provider documentation, attribution, licensing clarity, and GitHub presentation.
 - **Future candidates:** packaging polish, more provider examples, CI/release automation, and optional observability. These are not current features.
 
@@ -242,6 +258,7 @@ This repository pins third-party source components, including DeepSeek Harness a
 
 ## Documentation
 
+- [GUI Launcher Guide](docs/gui-launcher.md)
 - [User Guide](docs/user-guide.md)
 - [Demo Workflow](docs/demo-workflow.md)
 - [Architecture](docs/architecture.md)
