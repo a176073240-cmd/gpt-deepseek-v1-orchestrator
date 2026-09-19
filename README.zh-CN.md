@@ -4,6 +4,8 @@
 
 > 将 GPT 的规划与审查能力和 DeepSeek Harness 执行能力结合起来的持久化编码工作流。
 
+**只需提供一个目标和 Git 仓库：系统会生成 TaskContract、运行 DeepSeek Harness、验证变更，并由独立 Reviewer 决定通过、修订或停止。**
+
 GPT-DeepSeek V1 Orchestrator 将自然语言工程目标转换成面向现有 Git 仓库、结构化且可审查的工作流。兼容 GPT 的模型负责规划，DeepSeek Harness 执行变更，确定性检查收集证据，兼容 GPT 的 Reviewer 返回 PASS、REVISE 或 BLOCKED。
 
 V1.1.0 已包含持久化、恢复、人工决策与证据链，并保持 V1 的 Planner → Executor → Reviewer 架构，不包含模型路由、多 Agent 调度或 Web UI。
@@ -103,6 +105,18 @@ python orchestrator.py run "Inspect this fixture" --workspace /path/to/git-fixtu
 
 不要提交凭据、本地环境文件、state、sessions、logs 或运行输出。
 
+## Tested API Providers
+
+### Modelflare
+
+作者已使用 [Modelflare](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8) 测试本项目，其 OpenAI-compatible API Base 为 [https://modelflare.dev/v1](https://modelflare.dev/v1)。
+
+- **状态：** 作者测试使用。
+- **服务性质：** 第三方 Provider。
+- **合作关系：** 与本项目、DeepSeek 或 OpenAI 均无官方合作关系。
+- **可替换性：** Modelflare 不是必需服务，用户可替换为任何满足所需 OpenAI-compatible chat-completions API 的 Provider。
+
+注册链接包含 partner 标识。使用前请自行确认服务条款、隐私政策、价格、模型可用性和数据保留政策。通用配置见 [Providers](docs/providers.md)。
 ## Usage
 
 ~~~bash

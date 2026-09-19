@@ -9,6 +9,8 @@
 
 > A durable coding workflow that combines GPT planning and review with DeepSeek Harness execution.
 
+**Give it a goal and a Git repository. It creates a TaskContract, runs DeepSeek Harness, validates the changes, and asks an independent reviewer whether to pass, revise, or stop.**
+
 GPT-DeepSeek V1 Orchestrator turns a natural-language engineering goal into a structured, reviewable workflow for an existing Git repository. A GPT-compatible model plans the task, DeepSeek Harness performs the work, deterministic checks collect evidence, and a GPT-compatible reviewer returns PASS, REVISE, or BLOCKED.
 
 V1.1.0 includes persistence, resume, human escalation, and an evidence chain. It intentionally keeps the V1 planner → executor → reviewer architecture and does not introduce model routing, multi-agent scheduling, or a web UI.
@@ -22,7 +24,7 @@ V1.1.0 includes persistence, resume, human escalation, and an evidence chain. It
 | **Best for** | Teams that want durable contracts, reproducible evidence, and bounded automated repair |
 | **Current status** | V1.1.0 released; V1.2-A open-source productization in progress |
 
-**Start here:** [Quick Start](#quick-start) · [Guided Demo](docs/demo-workflow.md) · [Architecture](docs/architecture.md) · [User Guide](docs/user-guide.md) · [Providers](docs/providers.md)
+**Start here:** [Quick Start](#quick-start) · [Tested API Providers](#tested-api-providers) · [Guided Demo](docs/demo-workflow.md) · [Architecture](docs/architecture.md) · [User Guide](docs/user-guide.md)
 
 ## Why this project
 
@@ -149,6 +151,18 @@ Copy .env.example to a local ignored file and provide values through your shell,
 
 Never commit credentials, local environment files, state, sessions, logs, or runtime output.
 
+## Tested API Providers
+
+### Modelflare
+
+The author has tested this project with [Modelflare](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8) using the OpenAI-compatible API base [https://modelflare.dev/v1](https://modelflare.dev/v1).
+
+- **Status:** author-tested configuration.
+- **Service:** third-party provider.
+- **Relationship:** no official partnership with this project, DeepSeek, or OpenAI.
+- **Portability:** Modelflare is optional; users may replace it with any provider that implements the required OpenAI-compatible chat-completions API.
+
+The registration URL contains a partner identifier. Review the provider's current terms, privacy policy, pricing, model availability, and data-retention practices before use. See [Providers](docs/providers.md) for provider-neutral configuration guidance.
 ## Usage
 
 Run a real task:

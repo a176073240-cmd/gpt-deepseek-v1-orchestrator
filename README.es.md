@@ -4,6 +4,8 @@
 
 > Un flujo de programación persistente que combina la planificación y revisión de GPT con la ejecución de DeepSeek Harness.
 
+**Proporciona un objetivo y un repositorio Git: el sistema crea un TaskContract, ejecuta DeepSeek Harness, valida los cambios y pide a un Reviewer independiente que apruebe, revise o detenga el trabajo.**
+
 GPT-DeepSeek V1 Orchestrator convierte un objetivo técnico en lenguaje natural en un flujo estructurado y revisable para un repositorio Git existente. Un modelo compatible con GPT planifica, DeepSeek Harness ejecuta los cambios, las comprobaciones deterministas recopilan evidencias y un Reviewer compatible con GPT devuelve PASS, REVISE o BLOCKED.
 
 V1.1.0 incluye persistencia, reanudación, decisiones humanas y Evidence Chain. Conserva la arquitectura Planner → Executor → Reviewer de V1 y no incluye enrutamiento de modelos, planificación multiagente ni interfaz web.
@@ -103,6 +105,18 @@ Copia .env.example a un archivo local ignorado y proporciona variables mediante 
 
 No incluyas en commits credenciales, archivos locales de entorno, state, sessions, logs ni resultados de ejecución.
 
+## Tested API Providers
+
+### Modelflare
+
+El autor probó este proyecto con [Modelflare](https://modelflare.dev/sign-up?partner=IEQJUO5IKYU8) usando la API Base compatible con OpenAI [https://modelflare.dev/v1](https://modelflare.dev/v1).
+
+- **Estado:** configuración probada por el autor.
+- **Servicio:** Provider de terceros.
+- **Relación:** no existe colaboración oficial con este proyecto, DeepSeek ni OpenAI.
+- **Sustitución:** Modelflare es opcional; se puede usar cualquier Provider que implemente la API de chat-completions compatible requerida.
+
+La URL de registro contiene un identificador partner. Revisa los términos, privacidad, precios, modelos y retención de datos vigentes antes de usar el servicio. Consulta [Providers](docs/providers.md) para una configuración neutral.
 ## Usage
 
 ~~~bash
