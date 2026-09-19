@@ -1,40 +1,64 @@
 # GPT-DeepSeek V1 Orchestrator
 
-GPT-DeepSeek V1 Orchestrator is an **autonomous coding workflow system** for Git repositories. It turns a natural-language goal into a structured task contract, asks a DeepSeek Harness session to carry out the work, validates the resulting workspace, and sends the evidence to a GPT-compatible reviewer. The workflow can retry a revision, persist its state, resume after an interruption, or pause for a human decision.
+[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Español](README.es.md)
 
-V1.1 has been validated with real GPT planning, DeepSeek Harness execution, reviewer-driven `REVISE` to `PASS` recovery, persistence/resume, and an evidence chain. The release keeps the original V1 architecture and does not include V2 routing, multi-agent, or UI features.
+> A durable coding workflow that combines GPT planning and review with DeepSeek Harness execution.
+
+GPT-DeepSeek V1 Orchestrator turns a natural-language engineering goal into a structured, reviewable workflow for an existing Git repository. A GPT-compatible model plans the task, DeepSeek Harness performs the work, deterministic checks collect evidence, and a GPT-compatible reviewer returns PASS, REVISE, or BLOCKED.
+
+V1.1.0 includes persistence, resume, human escalation, and an evidence chain. It intentionally keeps the V1 planner → executor → reviewer architecture and does not introduce model routing, multi-agent scheduling, or a web UI.
+
+## Why this project
+
+A single prompt-to-code step is difficult to audit and recover. This project adds a small orchestration layer:
+
+- planning is captured as a durable TaskContract;
+- execution is separated from independent review;
+- validation and Git evidence are retained with the task;
+- reviewer feedback drives a bounded REVISE → PASS loop;
+- interrupted work resumes without planning again;
+- policy decisions can pause for explicit human input.
+
+## Core capabilities
+
+- **GPT Planner** — builds a structured contract with scope, non-goals, acceptance criteria, validation, allowed paths, and risks.
+- **DeepSeek Harness Executor** — runs the contract in a target Git workspace through dsh and retains the observed session identity.
+- **GPT Reviewer** — evaluates the implementation and evidence and returns PASS, REVISE, or BLOCKED.
+- **Persistence and resume** — atomically checkpoints every phase and resumes the saved contract after interruption.
+- **Evidence chain** — records validation, Git evidence, execution reports, reviewer feedback, and human answers.
+- **Safety boundaries** — checks workspace paths, captures a Git baseline, and redacts configured secret values.
+- **Offline mode** — provides a deterministic FakeAdapter for testing without live providers.
 
 ## Architecture
 
-```mermaid
+~~~mermaid
 flowchart LR
-    U[User goal] --> P[GPT Planner<br/>Task Contract JSON]
-    P --> E[DeepSeek Executor<br/>DeepSeek Harness / dsh]
-    E --> V[Validation<br/>commands and Git evidence]
-    V --> R[GPT Reviewer<br/>PASS / REVISE / BLOCKED]
+    U[User goal] --> P[GPT Planner<br/>TaskContract]
+    P --> E[DeepSeek Harness<br/>Executor]
+    E --> V[Validation<br/>and Git evidence]
+    V --> R[GPT Reviewer]
     R -->|REVISE| E
     R -->|PASS| C[Completed]
-    R -->|BLOCKED| H[Human escalation<br/>ask / answer]
-    H -->|resume| E
-    P -. checkpoint .-> S[(StateStore<br/>atomic JSON)]
+    R -->|BLOCKED| H[Human decision]
+    H -->|answer + resume| E
+    P -. checkpoint .-> S[(Atomic StateStore)]
     E -. checkpoint .-> S
     V -. checkpoint .-> S
     R -. checkpoint .-> S
-```
+~~~
 
-The planner and reviewer use an OpenAI-compatible `POST /chat/completions` endpoint. The executor invokes the installed `dsh` command in the target Git workspace. Every phase transition is written atomically to one JSON file under `.orchestrator/`; the observed DeepSeek session identity is retained for a later resume.
+The planner and reviewer use an OpenAI-compatible POST /chat/completions endpoint. The executor invokes DeepSeek Harness in the target repository. Runtime state is written under .orchestrator/ and ignored by Git. See [Architecture](docs/architecture.md).
 
-## Implemented V1 capabilities
+## Features
 
-- Structured `TaskContract` planning with goal interpretation, scope, non-goals, an implementation plan, acceptance criteria, validation requirements, allowed paths, and risk notes.
-- GPT-compatible planner and reviewer adapters with JSON parsing and verdict validation.
-- DeepSeek Harness headless execution with bounded subprocess handling, redacted evidence, and session-aware continuation.
-- Validation evidence containing project validation command results (when supplied by the contract) and Git status/diff information.
-- Workspace and path boundary checks, Git baseline capture, and secret redaction in provider output.
-- Automated `PASS`/`REVISE`/`BLOCKED` review loop with a configurable iteration limit.
-- Atomic task-state persistence and resume without re-planning a saved contract.
-- Human escalation through durable `ask` and `answer` commands.
-- Deterministic `FakeAdapter` mode for offline smoke tests and integration tests.
+- Structured and validated task contracts
+- Headless DeepSeek Harness execution with bounded subprocess handling
+- Validation commands plus Git status and diff evidence
+- Automatic REVISE → PASS recovery with an iteration limit
+- Durable ask, answer, status, and resume commands
+- JSON output for automation
+- Secret redaction and workspace boundary validation
+- Deterministic tests with temporary Git fixtures
 
 ## Installation
 
@@ -42,20 +66,18 @@ Requirements:
 
 - Python 3.10 or newer
 - Git
-- A configured OpenAI-compatible provider for planning and review
-- The DeepSeek Harness CLI (`dsh`) on `PATH` for real execution
+- DeepSeek Harness and Node.js for real execution
+- An OpenAI-compatible API provider for real planning and review
 
-Clone the repository and its pinned upstream submodules, create a virtual environment, and install the package:
-
-```bash
+~~~bash
 git clone --recurse-submodules https://github.com/a176073240-cmd/gpt-deepseek-v1-orchestrator.git
 cd gpt-deepseek-v1-orchestrator
 python -m venv .venv
-```
+~~~
 
-Activate the environment using the command for your shell, then install the local package:
+Activate the environment and install the package:
 
-```bash
+~~~bash
 # macOS/Linux
 source .venv/bin/activate
 
@@ -64,115 +86,115 @@ source .venv/bin/activate
 
 python -m pip install --upgrade pip
 python -m pip install -e .
-```
+~~~
 
-The project has no mandatory third-party Python runtime dependencies. Install and configure `dsh` separately according to the [DeepSeek Harness documentation](https://github.com/deepseek-ai/deepseek-harness).
+Follow the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) instructions for its prerequisites and source setup. See [Providers](docs/providers.md) and [Provider Setup](docs/provider-setup.md).
+
+## Quick Start
+
+Run an offline smoke test first. It needs no provider credentials or live dsh process:
+
+~~~bash
+orchestrator run "Inspect this fixture" \
+  --workspace /path/to/git-fixture \
+  --fake \
+  --json
+~~~
+
+Without an installed package, use the repository shim:
+
+~~~bash
+python orchestrator.py run "Inspect this fixture" \
+  --workspace /path/to/git-fixture \
+  --fake \
+  --json
+~~~
 
 ## Configuration
 
-Copy the example file to a local, ignored environment file and fill in values for your providers:
+Copy .env.example to a local ignored file and provide values through your shell, secret manager, or dotenv tool. The CLI reads environment variables but does not load .env automatically.
 
-```bash
-cp .env.example .env
-```
-
-The CLI reads environment variables; it does not load `.env` automatically. Use your shell, a secrets manager, or a dotenv tool to export the values before invoking the command. Never commit `.env` or put credentials in source, task contracts, state files, or logs.
-
-| Variable | Required | Description |
+| Variable | Required | Purpose |
 | --- | --- | --- |
-| `GPT_API_KEY` | Yes | API key for the OpenAI-compatible planner/reviewer endpoint. |
-| `GPT_API_BASE` | Yes | Provider base URL, or the full `/chat/completions` URL. |
-| `GPT_MODEL` | Yes | Model name used by both planner and reviewer. |
-| `DEEPSEEK_API_KEY` | Yes for real runs | Key consumed by the DeepSeek Harness environment. |
-| `DEEPSEEK_API_BASE` | Yes for real runs | DeepSeek provider base URL; the adapter also maps it to `DEEPSEEK_BASE_URL` when needed by `dsh`. |
-| `DEEPSEEK_MODEL` | Provider-dependent | Model name made available to `dsh`. |
-| `MAX_REVIEW_ITERATIONS` | No | Maximum automatic review/repair iterations; defaults to `3`. |
+| GPT_API_KEY | Real runs | Credential for the OpenAI-compatible planner/reviewer endpoint |
+| GPT_API_BASE | Real runs | Provider base URL or full /chat/completions URL |
+| GPT_MODEL | Real runs | Planner and reviewer model name |
+| DEEPSEEK_API_KEY | Real execution | Credential exposed to DeepSeek Harness |
+| DEEPSEEK_API_BASE | Real execution | DeepSeek-compatible provider base URL |
+| DEEPSEEK_MODEL | Provider-dependent | Model made available to DeepSeek Harness |
+| DSH_COMMAND | Source setups | Supported command used to launch DeepSeek Harness |
+| MAX_REVIEW_ITERATIONS | No | Maximum review/repair iterations; default 3 |
 
-Provider requests use the configured API key only in the process environment and redact matching secret values from saved execution evidence. Keep state and runtime directories private even when they are ignored by Git.
+Never commit credentials, local environment files, state, sessions, logs, or runtime output.
 
 ## Usage
 
-Run a real task against an existing Git repository:
+Run a real task:
 
-```bash
-orchestrator run "Add a CSV export while preserving the existing behavior" \
+~~~bash
+orchestrator run "Add CSV export while preserving existing behavior" \
   --workspace /path/to/target-repository \
   --state-dir .orchestrator \
   --max-iterations 3 \
   --json
-```
+~~~
 
-The command creates a task ID and advances through planning, execution, validation, and review. The JSON result contains the task contract, phase, execution reports, validation results, Git evidence, reviewer feedback, and (when available) the DeepSeek session ID. A non-zero exit code means the task did not reach `COMPLETED`.
+Inspect or resume a saved task:
 
-For an offline deterministic smoke test that does not call a provider:
-
-```bash
-orchestrator run "Inspect this fixture" --workspace /path/to/git-fixture --fake --json
-```
-
-Use the root shim instead when the package is not installed:
-
-```bash
-python orchestrator.py run "Inspect this fixture" --workspace /path/to/git-fixture --fake --json
-```
-
-Inspect a saved task:
-
-```bash
+~~~bash
 orchestrator status TASK_ID --state-dir .orchestrator --json
-```
-
-## Resume and human escalation
-
-The state file is updated after each phase. If the process exits during execution or validation, start a new process and resume the saved task by ID. The workspace is recorded in the state, so the same checkout should be available:
-
-```bash
 orchestrator resume TASK_ID --state-dir .orchestrator --json
-```
+~~~
 
-When a policy choice or required configuration needs a person, persist a question:
+Pause for a human decision, record the answer, and resume:
 
-```bash
-orchestrator ask TASK_ID "Which compatibility policy should the executor use?" \
+~~~bash
+orchestrator ask TASK_ID "Which compatibility policy should be used?" \
   --context "Two existing formats are present." \
   --state-dir .orchestrator --json
-```
 
-Record the answer using the returned question ID, then resume:
-
-```bash
-orchestrator answer TASK_ID "Keep the existing format and add the new one." \
+orchestrator answer TASK_ID "Keep the existing format." \
   --question-id QUESTION_ID \
   --state-dir .orchestrator --json
+
 orchestrator resume TASK_ID --state-dir .orchestrator --json
-```
+~~~
 
-The answer and prior evidence remain in the persisted state. A saved task contract is reused; the workflow does not plan the task again during resume.
+See the [User Guide](docs/user-guide.md) and [Demo Workflow](docs/demo-workflow.md).
 
-## Development and tests
+## Development and validation
 
-Run the deterministic test suite from the repository root:
-
-```bash
+~~~bash
 python -m pytest
 python -m compileall -q src orchestrator.py
-```
+~~~
 
-The test suite exercises contract parsing, redaction and path boundaries, DeepSeek command/session handling, review repair, persistence/resume, and human escalation. Tests use temporary Git fixtures and do not require API keys or a live `dsh` installation.
+Tests use temporary Git fixtures and do not require live providers. Archived V1.1 validation assets are under [validation/](validation/).
 
-## Limitations
+## Roadmap
 
-- Real provider validation requires valid credentials, network access, and a compatible `dsh` installation; the repository does not bundle model weights or provider services.
-- The workflow operates on one Git workspace at a time and intentionally keeps the V1 planner/executor/reviewer architecture small. It does not provide local Qwen models, model routing, multi-agent scheduling, or a web UI.
-- The executor is provider-controlled. Review and path checks provide evidence and guardrails, but they cannot guarantee that an external model will produce a useful change for every goal.
-- State files and runtime output are local operational data. They are ignored by Git, but operators should still protect them from unauthorized access and remove old runs when appropriate.
-- Planner-supplied validation commands must be appropriate for the target repository and may fail when required tools are unavailable.
+- **V1.1.0 — released:** planner, executor, reviewer loop, resume, evidence chain, guides, demo, and validation archive.
+- **V1.2-A — in progress:** localization, provider documentation, attribution, licensing clarity, and GitHub presentation.
+- **Future candidates:** packaging polish, more provider examples, CI/release automation, and optional observability. These are not current features.
 
-## Upstream components
+## License
 
-The checkout records pinned submodule references for:
+Original project code and documentation are licensed under the [Apache License 2.0](LICENSE).
 
-- [Augani/agent-orchestrator](https://github.com/Augani/agent-orchestrator)
-- [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)
+## Patent Notice
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development conventions and pull request guidance. This project is released under the [Apache License 2.0](LICENSE).
+Apache-2.0 Section 3 grants a patent license from each Contributor for patent claims that the Contributor can license and that are necessarily infringed by its Contribution alone or with the Work. The grant is subject to the license terms, including its patent-litigation termination provision. This summary adds no separate patent grant or warranty; the [LICENSE](LICENSE) text controls.
+
+## Third-party Attribution
+
+This repository pins third-party source components, including DeepSeek Harness and Augani Agent Orchestrator. They remain under their respective MIT licenses and are not relicensed under this project's Apache-2.0 license. See [Third-party Attribution](docs/third-party.md).
+
+## Documentation
+
+- [User Guide](docs/user-guide.md)
+- [Demo Workflow](docs/demo-workflow.md)
+- [Architecture](docs/architecture.md)
+- [Providers](docs/providers.md)
+- [Provider Setup](docs/provider-setup.md)
+- [Third-party Attribution](docs/third-party.md)
+- [Contributing](CONTRIBUTING.md)
